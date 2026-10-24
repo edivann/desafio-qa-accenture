@@ -1,0 +1,16 @@
+node_modules/
+cypress/screenshots/
+cypress/videos/
+cypress/downloads/
+cypress/reports/
+.cache/
+coverage/
+.env
+.env.*
+!.env.example
+cypress.env.json
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

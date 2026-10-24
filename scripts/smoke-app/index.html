@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Desafio QA Accenture — Smoke</title>
+  </head>
+  <body>
+    <main>
+      <h1 data-testid="page-title">Desafio QA Accenture</h1>
+      <p data-testid="status" role="status">Verificando API...</p>
+      <label for="upload">Selecione um arquivo TXT</label>
+      <input id="upload" data-testid="upload-input" type="file" accept=".txt,text/plain">
+      <p data-testid="upload-name"></p>
+      <pre data-testid="upload-content"></pre>
+    </main>
+    <script>
+      fetch('/api/health')
+        .then((response) => {
+          if (!response.ok) throw new Error('Falha na API');
+          return response.json();
+        })
+        .then((body) => {
+          document.querySelector('[data-testid="status"]').textContent =
+            body.status === 'ok' ? 'API disponível' : 'API indisponível';
+        })
+        .catch(() => {
+          document.querySelector('[data-testid="status"]').textContent = 'API indisponível';
+        });
+
+      document.querySelector('#upload').addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        document.querySelector('[data-testid="upload-name"]').textContent = file ? file.name : '';
+        document.querySelector('[data-testid="upload-content"]').textContent = file ? await file.text() : '';
+      });
+    </script>
+  </body>
+</html>

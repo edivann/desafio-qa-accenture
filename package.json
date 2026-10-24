@@ -1,0 +1,25 @@
+{
+  "name": "desafio-qa-accenture",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Automação de testes de API e Frontend para o desafio técnico de QA da Accenture.",
+  "engines": {
+    "node": ">=24 <25",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "test": "cypress run --browser edge",
+    "test:smoke": "cypress run --browser edge --spec \"cypress/e2e/**/smoke.cy.js\"",
+    "test:api": "cypress run --browser edge --spec \"cypress/e2e/api/**/*.cy.js\"",
+    "test:frontend": "cypress run --browser edge --spec \"cypress/e2e/frontend/**/*.cy.js\"",
+    "cy:open": "cypress open --e2e",
+    "cy:verify": "cypress verify",
+    "cy:info": "cypress info"
+  },
+  "devDependencies": {
+    "cypress": "16.2.0"
+  },
+  "allowScripts": {
+    "cypress@16.2.0": true
+  }
+}
