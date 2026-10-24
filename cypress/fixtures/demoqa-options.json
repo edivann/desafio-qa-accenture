@@ -1,0 +1,12 @@
+{
+  "firstNames": ["Ana", "Bruno", "Carla", "Diego"],
+  "lastNames": ["Silva", "Souza", "Costa", "Lima"],
+  "genders": ["Male", "Female", "Other"],
+  "subjects": ["Maths", "English", "Chemistry"],
+  "hobbies": ["Sports", "Reading", "Music"],
+  "locations": [
+    { "state": "NCR", "cities": ["Delhi", "Noida", "Gurgaon"] },
+    { "state": "Uttar Pradesh", "cities": ["Agra", "Lucknow"] }
+  ],
+  "departments": ["Qualidade", "Engenharia", "Financeiro"]
+}

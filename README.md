@@ -3,6 +3,7 @@
 Projeto independente de automação de API e Frontend em JavaScript com Cypress.
 Etapa 1: estrutura e validação do ambiente com uma aplicação local de demonstração.
 Etapa 2: fluxo completo da API Book Store do DemoQA, explicado abaixo.
+Etapa 3: Practice Form e Web Tables no Frontend real do DemoQA.
 
 ## Requisitos
 
@@ -57,6 +58,7 @@ a validação TLS habilitada.
 | `npm run test:api` | Apenas a pasta de API |
 | `npm run test:bookstore` | Apenas o fluxo completo da API Book Store do DemoQA |
 | `npm run test:frontend` | Apenas a pasta de Frontend |
+| `npm run test:frontend:demoqa` | Somente os dois cenários da Etapa 3 |
 | `npm run cy:open` | Interface interativa do Cypress |
 | `npm run cy:verify` | Verificação do binário do Cypress |
 | `npm run cy:info` | Diagnóstico do ambiente e navegadores |
@@ -65,6 +67,8 @@ O servidor de demonstração inicia automaticamente na interface de loopback,
 em uma porta livre. Em modo de execução, ele é encerrado após os testes. No modo
 interativo, é encerrado junto com o processo de configuração do Cypress.
 Não é preciso iniciar outro terminal ou definir uma porta fixa.
+Esse servidor é usado pelos smoke tests locais. Os cenários das Etapas 2 e 3
+acessam o DemoQA real, que precisa estar disponível durante a execução.
 
 ## Estrutura
 
@@ -75,11 +79,19 @@ desafio-qa-accenture/
 │   │   ├── api/
 │   │   │   ├── bookstore.cy.js
 │   │   │   └── smoke.cy.js
-│   │   └── frontend/smoke.cy.js
+│   │   └── frontend/
+│   │       ├── practice-form.cy.js
+│   │       ├── smoke.cy.js
+│   │       └── web-tables.cy.js
 │   ├── fixtures/
+│   │   ├── demoqa-options.json
 │   │   ├── smoke.json
 │   │   └── uploads/arquivo-teste.txt
-│   ├── pages/SmokePage.js
+│   ├── pages/
+│   │   ├── DemoQaPage.js
+│   │   ├── PracticeFormPage.js
+│   │   ├── SmokePage.js
+│   │   └── WebTablesPage.js
 │   └── support/
 │       ├── commands.js
 │       └── e2e.js
@@ -119,7 +131,8 @@ Os smoke tests continuam usando URLs absolutas do servidor local para validar
 o ambiente, mesmo quando as URLs reais forem configuradas. Novos testes podem
 usar `cy.visit('/')` e `cy.apiRequest({ method: 'GET', url: '/recurso' })`.
 Por padrão, `apiUrl` aponta para `https://demoqa.com`. O Frontend de demonstração
-continua usando o servidor local.
+continua usando a URL absoluta do servidor local; `baseUrl` agora aponta para
+`https://demoqa.com`, usado pelos dois cenários reais de Frontend.
 
 ## Etapa 2 — API Book Store
 
@@ -180,7 +193,7 @@ incluído na mensagem de falha, sem transformar o HTTP 500 em sucesso.
 O DemoQA é um serviço público externo: falhas de rede, autenticação, indisponibilidade
 ou catálogo insuficiente devem falhar no teste e ser investigadas. Cada execução
 cria uma conta fictícia e mantém a coleção nela; exclusão de contas não faz parte
-deste fluxo. Nenhum novo cenário de Frontend ou bônus de Cucumber foi implementado.
+deste fluxo. A Etapa 2 não adicionou cenários de Frontend ou bônus de Cucumber.
 
 ### Validação executada
 
@@ -189,6 +202,82 @@ deste fluxo. Nenhum novo cenário de Frontend ou bônus de Cucumber foi implemen
   Inclui outra execução do fluxo real com novo usuário e os cinco smoke tests
   já existentes. Ambos os comandos terminaram com código de saída zero em
   Chrome 156 headless, Cypress 16.2.0 e Node.js 24.22.1.
+
+## Etapa 3 — Practice Form e Web Tables
+
+Execute apenas os dois novos cenários com:
+
+```sh
+npm run test:frontend:demoqa
+```
+
+`npm run test:frontend` também executa os dois smoke tests locais de Frontend.
+`npm test` inclui todos os cenários, inclusive o fluxo real de API da Etapa 2.
+
+### Practice Form
+
+O teste começa na página inicial e navega por Forms → Practice Form. Preenche
+nome, sobrenome, e-mail único, gênero, celular válido com dez dígitos, nascimento,
+dois assuntos, os três hobbies, endereço, estado e cidade compatível. A data
+é selecionada pelo calendário; os componentes de assunto, estado e cidade
+são preenchidos pelas opções visíveis da interface.
+
+O TXT existente em `cypress/fixtures/uploads/arquivo-teste.txt` é selecionado
+com `selectFile()`. O teste confere o arquivo selecionado, submete o formulário,
+valida a visibilidade do modal e compara as dez linhas da confirmação com o
+objeto usado no preenchimento. Depois fecha o modal com Escape e verifica
+que ele deixou de existir e que o formulário permanece visível.
+
+O campo tem o rótulo Picture, mas atualmente aceita o TXT solicitado. A verificação
+cobre sua seleção e o nome exibido na confirmação; persistência em um servidor
+não faz parte deste cenário.
+
+### Web Tables
+
+O teste começa na página inicial e navega por Elements → Web Tables. Cria um
+registro com e-mail único e valida as seis células de dados na tabela. Em seguida,
+edita todos os campos, verifica os novos valores e a ausência do e-mail anterior,
+exclui somente o registro criado e confirma que ele não existe mais.
+
+As ações Edit e Delete são localizadas dentro da linha do e-mail do teste,
+sem depender do número do registro ou da posição da linha. A ausência é validada
+na tabela sem filtro de busca, para evitar uma conclusão baseada em um filtro
+que apenas esconde o registro.
+
+### Organização e dados
+
+- `DemoQaPage`: navegação a partir da página inicial, compartilhada pelos cenários.
+- `PracticeFormPage` e `WebTablesPage`: seletores e ações de cada página, seguindo
+  o padrão do Page Object existente. As asserções ficam nos arquivos de teste.
+- `demoqa-options.json`: opções válidas dos componentes e dados fictícios para
+  sorteio. E-mails usam UUID; nomes, data, gênero, celular, assuntos, localização,
+  idade e salário são gerados ou selecionados a cada execução. Os dias variam
+  de 1 a 28 para manter a data válida em todos os meses.
+- Não foram adicionadas dependências. Não há esperas fixas, cliques forçados,
+  remoção de elementos da página ou handlers para ignorar exceções da aplicação.
+- Screenshots após as verificações ficam em `cypress/screenshots/`: confirmação
+  do formulário, registro editado e tabela após a exclusão. São evidências locais
+  ignoradas pelo Git.
+
+### Dificuldade encontrada no site
+
+O botão Close da confirmação do Practice Form lança `findDOMNode is not a function`
+no código atual do DemoQA. A primeira execução falhou nesse ponto, depois de
+validar todos os dados do modal. O modal também oferece fechamento por Escape,
+que aciona seu handler nativo de fechamento; esse é o caminho usado no teste.
+A ausência do modal continua sendo uma asserção obrigatória. O defeito do botão
+permanece no site e não é tratado como corrigido pela automação.
+
+Nenhum cenário adicional de Frontend ou Cucumber foi implementado nesta etapa.
+
+### Validação da Etapa 3
+
+- `npm run test:frontend:demoqa`: os dois novos cenários aprovados no Chrome.
+- `npm test`: 8 testes aprovados em 5 specs, incluindo a API Book Store e os
+  smoke tests existentes; zero falhas, pendências ou ignorados; código de saída 0.
+- As verificações incluem as dez linhas da confirmação, a ausência do modal
+  após Escape, os seis campos da tabela antes e depois da edição e a ausência
+  do registro excluído. O fechamento do botão Close permanece um defeito conhecido.
 
 Não salve credenciais no código, em fixtures ou em argumentos de linha de comando.
 Forneça segredos por variáveis de ambiente na execução. `.env` não é carregado
