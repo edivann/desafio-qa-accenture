@@ -19,7 +19,7 @@ module.exports = defineConfig({
       // Uma porta livre evita conflitos com outros projetos ou aplicações.
       config.baseUrl = config.baseUrl || origin;
       config.expose.smokeUrl = origin;
-      config.expose.apiUrl = config.expose.apiUrl || config.baseUrl;
+      config.expose.apiUrl = config.expose.apiUrl || 'https://demoqa.com';
 
       on('after:run', () => new Promise((resolve, reject) => {
         server.close((error) => (error ? reject(error) : resolve()));

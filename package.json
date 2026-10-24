@@ -8,10 +8,11 @@
     "npm": ">=10"
   },
   "scripts": {
-    "test": "cypress run --browser edge",
-    "test:smoke": "cypress run --browser edge --spec \"cypress/e2e/**/smoke.cy.js\"",
-    "test:api": "cypress run --browser edge --spec \"cypress/e2e/api/**/*.cy.js\"",
-    "test:frontend": "cypress run --browser edge --spec \"cypress/e2e/frontend/**/*.cy.js\"",
+    "test": "cypress run --browser chrome",
+    "test:smoke": "cypress run --browser chrome --spec \"cypress/e2e/**/smoke.cy.js\"",
+    "test:api": "cypress run --browser chrome --spec \"cypress/e2e/api/**/*.cy.js\"",
+    "test:bookstore": "cypress run --browser chrome --spec \"cypress/e2e/api/bookstore.cy.js\"",
+    "test:frontend": "cypress run --browser chrome --spec \"cypress/e2e/frontend/**/*.cy.js\"",
     "cy:open": "cypress open --e2e",
     "cy:verify": "cypress verify",
     "cy:info": "cypress info"
