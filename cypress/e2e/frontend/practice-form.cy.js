@@ -2,7 +2,7 @@ import demoQaPage from '../../pages/DemoQaPage';
 import practiceFormPage from '../../pages/PracticeFormPage';
 
 describe('DemoQA | Practice Form', () => {
-  it('preenche todos os campos, confere os dados enviados e fecha a confirmação', () => {
+  it('TC-PF-001 - preenche todos os campos, confere os dados enviados e fecha a confirmação', () => {
     cy.fixture('demoqa-options').then((options) => {
       const runId = crypto.randomUUID();
       const location = Cypress._.sample(options.locations);
@@ -29,7 +29,7 @@ describe('DemoQA | Practice Form', () => {
       cy.location('pathname').should('eq', '/');
       demoQaPage.openPracticeForm();
       cy.location('pathname').should('eq', '/automation-practice-form');
-      cy.contains('h1', 'Practice Form').should('be.visible');
+      practiceFormPage.heading().should('be.visible').and('have.text', 'Practice Form');
 
       practiceFormPage.fill(student);
       practiceFormPage.uploadInput().should(($input) => {
@@ -61,7 +61,7 @@ describe('DemoQA | Practice Form', () => {
       cy.screenshot('practice-form-confirmacao', { capture: 'viewport' });
       practiceFormPage.closeConfirmation();
       practiceFormPage.confirmationDialog().should('not.exist');
-      cy.get('#userForm').should('be.visible');
+      practiceFormPage.form().should('be.visible');
     });
   });
 });

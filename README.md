@@ -395,5 +395,22 @@ do plugin descrita em Sortable.
 
 ## Referências da implementação
 
+## Alinhamento final dos cenários
+
+Web Tables agora possui TC-WT-001 (cadastro), TC-WT-002 (edição) e TC-WT-003
+(exclusão), com dados próprios. A exclusão também prepara cadastro e edição,
+preservando a sequência CRUD e suas verificações. Book Store permanece integrado
+em TC-API-001: dividir suas seis etapas em testes dependentes violaria o fluxo
+contínuo exigido. Practice Form usa TC-PF-001 e mantém os dez dados e Escape.
+Os cinco testes locais usam IDs INF, distintos dos casos do desafio.
+
+Execute `npm run test:challenge` para selecionar somente os seis módulos do
+desafio. `npm run test:smoke` seleciona a infraestrutura local. Para um caso
+isolado: `npm run test:frontend -- --spec cypress/e2e/frontend/web-tables.cy.js
+--expose grep=TC-WT-001,grepOmitFiltered=true`. O filtro oficial não está ativo
+nas execuções normais; nenhum it.only ou it.skip faz parte das specs.
+
+## Referências das bibliotecas
+
 - [Instalação do Cypress](https://docs.cypress.io/app/get-started/install-cypress)
 - [Upload com selectFile](https://docs.cypress.io/api/commands/selectfile)

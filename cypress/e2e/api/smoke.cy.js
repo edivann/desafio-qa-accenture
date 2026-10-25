@@ -1,7 +1,7 @@
 describe('Smoke | API local de demonstração', () => {
   const endpoint = (path) => `${Cypress.expose('smokeUrl')}${path}`;
 
-  it('retorna a saúde do serviço com contrato JSON válido', () => {
+  it('INF-API-001 - retorna a saúde do serviço com contrato JSON válido', () => {
     cy.apiRequest({ method: 'GET', url: endpoint('/api/health') }).then((response) => {
       expect(response.status).to.eq(200);
       expect(response.headers['content-type']).to.include('application/json');
@@ -9,7 +9,7 @@ describe('Smoke | API local de demonstração', () => {
     });
   });
 
-  it('aceita um usuário fictício e retorna os dados com identificador', () => {
+  it('INF-API-002 - aceita um usuário fictício e retorna os dados com identificador', () => {
     cy.fixture('smoke').then(({ user }) => {
       cy.apiRequest({ method: 'POST', url: endpoint('/api/users'), body: user })
         .then((response) => {
@@ -20,7 +20,7 @@ describe('Smoke | API local de demonstração', () => {
     });
   });
 
-  it('retorna 404 para uma rota inexistente', () => {
+  it('INF-API-003 - retorna 404 para uma rota inexistente', () => {
     cy.apiRequest({
       method: 'GET',
       url: endpoint('/api/inexistente'),

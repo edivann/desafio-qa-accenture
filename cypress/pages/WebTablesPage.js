@@ -1,4 +1,8 @@
 class WebTablesPage {
+  heading() { return cy.get('h1'); }
+  table() { return cy.get('table'); }
+  cellsByEmail(email) { return this.rowByEmail(email).find('td:not(:last-child)'); }
+
   openRegistration() {
     return cy.get('#addNewRecordButton').click();
   }

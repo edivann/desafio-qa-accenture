@@ -9,6 +9,7 @@
   },
   "scripts": {
     "test": "cypress run --browser chrome",
+    "test:challenge": "cypress run --browser chrome --spec \"cypress/e2e/api/bookstore.cy.js,cypress/e2e/frontend/practice-form.cy.js,cypress/e2e/frontend/web-tables.cy.js,cypress/e2e/frontend/progress-bar.cy.js,cypress/e2e/frontend/sortable.cy.js,cypress/e2e/frontend/browser-windows.cy.js\"",
     "test:smoke": "cypress run --browser chrome --spec \"cypress/e2e/**/smoke.cy.js\"",
     "test:api": "cypress run --browser chrome --spec \"cypress/e2e/api/**/*.cy.js\"",
     "test:bookstore": "cypress run --browser chrome --spec \"cypress/e2e/api/bookstore.cy.js\"",
@@ -22,6 +23,7 @@
     "cy:info": "cypress info"
   },
   "devDependencies": {
+    "@cypress/grep": "7.0.0",
     "@cypress/puppeteer": "0.1.10",
     "cypress": "16.2.0",
     "puppeteer-core": "25.16.0"

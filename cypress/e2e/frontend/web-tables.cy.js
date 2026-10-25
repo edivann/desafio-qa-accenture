@@ -1,65 +1,68 @@
 import demoQaPage from '../../pages/DemoQaPage';
 import webTablesPage from '../../pages/WebTablesPage';
+import { generateTableRecord, updateTableRecord } from '../../support/utils/test-data';
 
 function expectRecordInTable(record) {
-  webTablesPage.rowByEmail(record.email).should('be.visible').find('td').should(($cells) => {
-    const values = [...$cells].slice(0, 6).map((cell) => cell.textContent.trim());
-    expect(values, 'todos os campos do registro na tabela').to.deep.eq([
-      record.firstName, record.lastName, String(record.age),
-      record.email, String(record.salary), record.department,
-    ]);
+  webTablesPage.cellsByEmail(record.email).should(($cells) => {
+    expect([...$cells].map((cell) => cell.textContent.trim()), 'seis campos visíveis do registro')
+      .to.deep.eq([record.firstName, record.lastName, String(record.age),
+        record.email, String(record.salary), record.department]);
   });
+  webTablesPage.rowByEmail(record.email).should('be.visible');
+}
+
+function createRecord(record) {
+  webTablesPage.openRegistration();
+  webTablesPage.registrationDialog().should('be.visible');
+  webTablesPage.fillRegistration(record);
+  webTablesPage.submitRegistration();
+  webTablesPage.registrationDialog().should('not.exist');
+  expectRecordInTable(record);
+}
+
+function editRecord(original, updated) {
+  webTablesPage.editRecord(original.email);
+  webTablesPage.registrationDialog().should('be.visible');
+  webTablesPage.fillRegistration(updated);
+  webTablesPage.submitRegistration();
+  webTablesPage.registrationDialog().should('not.exist');
+  expectRecordInTable(updated);
+  webTablesPage.tableBody().should('not.contain.text', original.email);
 }
 
 describe('DemoQA | Web Tables', () => {
-  it('cria, edita e exclui um registro, validando cada resultado na tabela', () => {
+  beforeEach(() => {
+    demoQaPage.visitHome();
+    demoQaPage.openWebTables();
+    cy.location('pathname').should('eq', '/webtables');
+    webTablesPage.heading().should('be.visible').and('have.text', 'Web Tables');
     cy.fixture('demoqa-options').then((options) => {
-      const runId = crypto.randomUUID();
-      const record = {
-        firstName: Cypress._.sample(options.firstNames),
-        lastName: Cypress._.sample(options.lastNames),
-        email: `registro.${runId}@example.com`,
-        age: Cypress._.random(18, 60),
-        salary: Cypress._.random(1000, 20000),
-        department: Cypress._.sample(options.departments),
-      };
-      const updatedRecord = {
-        firstName: record.firstName === 'Ana' ? 'Bruno' : 'Ana',
-        lastName: record.lastName === 'Silva' ? 'Costa' : 'Silva',
-        email: `editado.${runId}@example.com`,
-        age: record.age + 1,
-        salary: record.salary + 1000,
-        department: 'Automacao',
-      };
+      cy.wrap(generateTableRecord(options)).as('record');
+    });
+  });
 
-      demoQaPage.visitHome();
-      demoQaPage.openWebTables();
-      cy.location('pathname').should('eq', '/webtables');
-      cy.contains('h1', 'Web Tables').should('be.visible');
+  it('TC-WT-001 - cadastra um registro e valida todos os campos na tabela', () => {
+    cy.get('@record').then((record) => { createRecord(record); });
+  });
 
-      webTablesPage.openRegistration();
-      webTablesPage.registrationDialog().should('be.visible');
-      webTablesPage.fillRegistration(record);
-      webTablesPage.submitRegistration();
-      webTablesPage.registrationDialog().should('not.exist');
-      expectRecordInTable(record);
+  it('TC-WT-002 - edita seu próprio registro e confirma os valores atualizados', () => {
+    cy.get('@record').then((record) => {
+      createRecord(record);
+      editRecord(record, updateTableRecord(record));
+      webTablesPage.table().screenshot('TC-WT-002-registro-editado');
+    });
+  });
 
-      webTablesPage.editRecord(record.email);
-      webTablesPage.registrationDialog().should('be.visible');
-      webTablesPage.fillRegistration(updatedRecord);
-      webTablesPage.submitRegistration();
-      webTablesPage.registrationDialog().should('not.exist');
-      expectRecordInTable(updatedRecord);
-      // Sem filtro de busca: a ausência não pode ser consequência de um filtro.
-      webTablesPage.tableBody().should('not.contain.text', record.email);
-      webTablesPage.tableBody().parent('table').screenshot('web-tables-registro-editado');
-
-      webTablesPage.deleteRecord(updatedRecord.email);
+  it('TC-WT-003 - exclui seu próprio registro após cadastro e edição', () => {
+    cy.get('@record').then((record) => {
+      const updated = updateTableRecord(record);
+      createRecord(record);
+      editRecord(record, updated);
+      webTablesPage.deleteRecord(updated.email);
       webTablesPage.tableBody().should('be.visible')
-        .and('not.contain.text', updatedRecord.email)
-        .and('not.contain.text', record.email);
-      webTablesPage.rowByEmail(updatedRecord.email).should('not.exist');
-      webTablesPage.tableBody().parent('table').screenshot('web-tables-registro-excluido');
+        .and('not.contain.text', record.email).and('not.contain.text', updated.email);
+      webTablesPage.rowByEmail(updated.email).should('not.exist');
+      webTablesPage.table().screenshot('TC-WT-003-registro-excluido');
     });
   });
 });

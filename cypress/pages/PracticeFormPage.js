@@ -1,4 +1,7 @@
 class PracticeFormPage {
+  heading() { return cy.get('h1'); }
+  form() { return cy.get('#userForm'); }
+
   fill(student) {
     cy.get('#firstName').type(student.firstName);
     cy.get('#lastName').type(student.lastName);

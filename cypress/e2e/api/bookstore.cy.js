@@ -12,7 +12,7 @@ function validateResponse(response, expectedStatus, step) {
 }
 
 describe('DemoQA | Fluxo completo da API Book Store', () => {
-  it('cria e autentica um usuário, adiciona dois livros e consulta a coleção', () => {
+  it('TC-API-001 - cria e autentica um usuário, adiciona dois livros e consulta a coleção', () => {
     // O DemoQA aceitou um login longo no cadastro, mas falhou ao gerar seu token.
     const runId = `${Date.now().toString(36)}${crypto.randomUUID().slice(0, 6)}`;
     const credentials = {
