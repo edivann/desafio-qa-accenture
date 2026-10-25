@@ -6,9 +6,9 @@ O cenário integrado anterior foi dividido em dois cenários independentes, conf
 
 | Cenário | Comando | Resultado esperado na versão atual do site |
 | --- | --- | --- |
-| TC-BDD-001 — cadastro | `npm run test:bonus:validos` | Um cenário aprovado: 12 registros exclusivos, seis campos comparados por registro, todos visíveis e contabilizados |
+| TC-BDD-001 — cadastro | `npm run test:bonus` | Um cenário aprovado: 12 registros exclusivos, seis campos comparados por registro, todos visíveis e contabilizados |
 | TC-BDD-002 — exclusão individual | `npm run test:bonus:known-bug` | Um cenário reprovado na primeira exclusão, com evidências e código de saída 1 |
-| Ambos | `npm run test:bonus` | Um aprovado e um reprovado; resultado global de falha |
+| Ambos | `npm run test:bonus:all` | Um aprovado e um reprovado; resultado global de falha |
 
 Os perfis usam expressões de tags explícitas (`not @known-bug` / `@known-bug`) e `omitFiltered=true` via `--expose`, conforme a interface do preprocessor instalado para Cypress 16. O cenário fora de um perfil não é contado como aprovado. O comando conjunto mantém ambos ativos e preserva a falha real; não há skip ou captura da exceção para obter sucesso.
 
@@ -34,13 +34,13 @@ Na interface de um navegador, sem Cypress ou Cucumber:
 
 Isso descarta dependência exclusiva de hooks/steps Cucumber e demonstra o defeito pela interface. Os e-mails são dados fictícios criados só para a reprodução.
 
-## Causa técnica
+## Comportamento confirmado e hipótese técnica
 
-O bundle público atual [index-D_rDx8ml.js](https://demoqa.com/assets/index-D_rDx8ml.js) cria as colunas com `useMemo` e dependências vazias. A ação Delete captura a versão inicial do callback que filtra a lista. Essa versão usa os três registros iniciais. Excluir um ID adicionado (4, por exemplo) filtra a lista antiga e substitui o estado atual pelos três originais.
+Na investigação anterior, a leitura do [bundle público consultado](https://demoqa.com/assets/index-D_rDx8ml.js) mostrou colunas criadas com `useMemo` e dependências vazias e um callback que filtra a lista. Isso sugere que a ação Delete pode manter uma referência à lista inicial. Essa hipótese é compatível com o retorno às três linhas originais, mas não constitui comprovação conclusiva da causa interna no DemoQA. O bundle pode mudar e não há confirmação do mantenedor ou validação de uma correção no produto.
 
-Portanto, os registros adicionados são removidos da lista em memória; não estão apenas escondidos. Não há persistência de servidor comprovada nesse cenário.
+O comportamento confirmado é o desaparecimento dos registros adicionados, inclusive em busca por e-mail, com o mesmo documento e sem filtros/paginação ocultando os dados. Não foi comprovada persistência em servidor nem inspecionado diretamente o estado interno do React.
 
-A correção de origem deve usar a lista atual, por exemplo com atualização funcional no código do site:
+Se a hipótese se confirmar, uma possível correção pelo mantenedor é usar atualização funcional baseada na lista atual:
 
 ```js
 setRows(current => current.filter(item => item.id !== selected.id));
@@ -58,7 +58,7 @@ Esse exemplo é uma recomendação para o mantenedor. O projeto de testes não c
 - Nenhum `visit`/`reload` após a preparação inicial; os steps seguintes reutilizam aliases estáticos.
 - O cenário captura JSON e screenshot antes da asserção de sobrevivência e interrompe as outras exclusões se houver perda indevida.
 
-Essas observações descartam recarregamento/nova navegação, paginação, busca e seletor atingindo várias linhas. São coerentes com a substituição da lista pelo estado antigo identificada no bundle. Não foi necessário acessar internamente o React para validar isso.
+Essas observações descartam recarregamento/nova navegação, paginação, busca e seletor atingindo várias linhas na execução registrada. São compatíveis com a hipótese de referência antiga no callback, sem comprovar todo o ciclo interno de estado do React.
 
 ## Integração e preservação
 
@@ -67,7 +67,7 @@ Essas observações descartam recarregamento/nova navegação, paginação, busc
 - cypress-on-fix 1.1.0: composição de eventos recomendada pelo Cucumber para preservar handlers simultâneos.
 - Configuração BDD reaproveita setupNodeEvents base, Puppeteer/Browser Windows, URLs e encerramento do Smoke. Não substitui a configuração padrão.
 - Feature e Step Definitions exclusivos; Page Object ganha apenas getters, paginação e leitura para diagnóstico. CRUD obrigatório não foi alterado.
-- Scripts dos seis módulos preservados. test:bonus executa os dois cenários; os perfis test:bonus:validos e test:bonus:known-bug selecionam explicitamente os cenários não bloqueados e a reprodução do defeito. A configuração BDD aceita também as specs tradicionais.
+- Scripts dos seis módulos preservados. test:bonus executa somente o cadastro não bloqueado; test:bonus:known-bug reproduz a exclusão; test:bonus:all mantém ambos acessíveis. test:all reúne os 14 casos tradicionais e o cadastro BDD, excluindo explicitamente @known-bug. test:bonus:validos permanece por compatibilidade. A configuração BDD aceita também as specs tradicionais.
 - A divisão não alterou o Page Object, a configuração dos plugins, as dependências ou o lockfile existentes no início desta etapa. O commit do bônus também incorpora os arquivos da integração anterior, que já estavam presentes e ainda não tinham commit.
 
 Referências: [Esbuild oficial](https://github.com/badeball/cypress-cucumber-preprocessor/blob/master/examples/esbuild-cjs/cypress.config.js), [eventos](https://github.com/badeball/cypress-cucumber-preprocessor/blob/master/docs/event-handlers.md).

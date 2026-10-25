@@ -36,14 +36,16 @@ Os comandos de teste usam Chrome headless.
 | `npm run test:challenge` | Somente os seis módulos Accenture | 9 |
 | `npm run test:smoke` | API e Frontend da aplicação local | 5 |
 | `npm test` | Desafio e Smoke | 14 |
+| `npm run test:all` | Desafio, Smoke e cadastro BDD; exclui `@known-bug` | 15 |
 | `npm run test:bookstore` | Fluxo integrado Book Store | 1 |
 | `npm run test:frontend:demoqa` | Practice Form e Web Tables | 4 |
 | `npm run test:progress-bar` | Progress Bar | 2 |
 | `npm run test:sortable` | Sortable | 1 |
 | `npm run test:browser-windows` | Janela real | 1 |
-| `npm run test:bonus:validos` | Somente BDD sem `@known-bug`: cadastro dinâmico | 1 |
+| `npm run test:bonus` | Somente BDD sem `@known-bug`: cadastro dinâmico | 1 |
+| `npm run test:bonus:validos` | Perfil equivalente a `test:bonus`, mantido por compatibilidade | 1 |
 | `npm run test:bonus:known-bug` | Reproduz a exclusão individual; falha pelo defeito do DemoQA | 1 bloqueado |
-| `npm run test:bonus` | Todos os BDD; inclui a falha conhecida de exclusão | 2 (1 bloqueado) |
+| `npm run test:bonus:all` | Todos os BDD; inclui a falha conhecida de exclusão | 2 (1 bloqueado) |
 | `npm run test:api` | Book Store e Smoke API | 4 |
 | `npm run test:frontend` | Frontend do desafio e Smoke UI | 10 |
 | `npm run cy:open` | Runner interativo; ver restrição abaixo | — |
@@ -57,7 +59,7 @@ npm test -- --spec cypress/e2e/frontend/web-tables.cy.js --expose grep=TC-WT-002
 npm test -- --spec cypress/e2e/frontend/progress-bar.cy.js --expose grep=TC-PB-001,grepOmitFiltered=true
 ```
 
-Não há `only`, `skip`, retries de teste, pausas fixas com `cy.wait`, cliques forçados ou exceções ignoradas. Os comandos BDD de válidos/known-bug usam filtros de tags explícitos; `test:bonus` executa ambos sem filtro.
+Não há `only`, `skip`, retries de teste, pausas fixas com `cy.wait`, cliques forçados ou exceções ignoradas. Os comandos BDD usam filtros de tags explícitos; `test:bonus:all` executa ambos sem filtro.
 
 O servidor Smoke inicia automaticamente em `127.0.0.1`, numa porta livre, e encerra após a execução. `test:smoke` usa também a URL local na verificação inicial do Cypress, sem depender da disponibilidade do DemoQA. Na suíte completa, os Smoke continuam usando URLs locais absolutas.
 
@@ -81,16 +83,16 @@ URLs opcionais: `--config baseUrl=https://demoqa.com` para o Frontend e `--expos
 | INF-API-001 a 003 | Smoke API local | Saúde JSON, criação fictícia e rota inexistente 404 |
 | INF-UI-001 a 002 | Smoke UI local | Página, comunicação com API, seleção e leitura do TXT |
 
-Os cinco casos INF validam infraestrutura; não contam como requisitos Accenture. Há um bônus aprovado (TC-BDD-001) e um bloqueado (TC-BDD-002). A exclusão bloqueada não entra na contagem de aprovados. A suíte padrão continua com 14 casos; o perfil BDD não bloqueado adiciona um caso aprovado, executado separadamente.
+Os cinco casos INF validam infraestrutura; não contam como requisitos Accenture. Há um bônus aprovado (TC-BDD-001) e um bloqueado (TC-BDD-002). A exclusão bloqueada não entra na contagem de aprovados. A suíte padrão continua com 14 casos; `test:all` inclui o cadastro BDD e totaliza 15 casos, excluindo explicitamente o cenário bloqueado.
 
 ### Bônus Cucumber
 
 ```sh
-npm run test:bonus:validos
+npm run test:bonus
 npm run test:bonus:known-bug
 ```
 
-Os comandos selecionam a mesma feature em português. `test:bonus:validos` usa a expressão `not @known-bug`; `test:bonus:known-bug` usa `@known-bug`. No Cypress 16, essas opções passam por `--expose`, com `omitFiltered=true` para não apresentar o caso fora do perfil como pendente ou aprovado. `npm run test:bonus` não filtra tags: executa os dois e termina com falha enquanto o defeito persistir. A tag não transforma uma falha em sucesso nem ignora as asserções.
+Os comandos selecionam a mesma feature em português. `test:bonus` usa a expressão `not @known-bug`; `test:bonus:known-bug` usa `@known-bug`. No Cypress 16, essas opções passam por `--expose`, com `omitFiltered=true` para não apresentar o caso fora do perfil como pendente ou aprovado. `npm run test:bonus:all` não filtra tags: executa os dois e termina com falha enquanto o defeito persistir. A tag não transforma uma falha em sucesso nem ignora as asserções. `test:bonus:validos` preserva o perfil anterior por compatibilidade.
 
 Cada cenário navega novamente à Web Tables e gera seus próprios 12 registros. Ambos reutilizam exatamente os mesmos steps de navegação, cadastro e comparação. TC-BDD-001 termina após validar cadastro; TC-BDD-002 prepara o cadastro novamente e tenta as exclusões. Aliases estáticos pertencem à execução atual, com isolamento habilitado. Nenhum cenário depende do outro.
 
@@ -166,11 +168,11 @@ Login curto combina timestamp e parte de UUID; a senha usa outro UUID com prefix
 
 ## Validação e entrega
 
-A validação anterior inclui instalação limpa, auditoria e seis specs isoladas. Após a divisão BDD, foram executados os dois cenários isoladamente, a execução conjunta dos dois, os nove obrigatórios e a regressão padrão com 14 casos. O cadastro BDD aprovado e a exclusão bloqueada são reportados separadamente. Web Tables também foi executado por ID após sua divisão; Progress Bar preserva os casos independentes. Contagens, durações, falhas e evidências constam do relatório de entrega.
+A validação anterior inclui instalação limpa, auditoria e seis specs isoladas. Para a entrega, os comandos incluem o cadastro BDD isolado e sua repetição, a reprodução separada de TC-BDD-002, os nove obrigatórios, os cinco Smoke, a regressão padrão de 14 casos e `test:all` com 15 casos sem o cenário bloqueado. Os resultados são registrados após a execução, e a exclusão não é contada como aprovada. Web Tables e Progress Bar preservam seus casos independentes. Contagens, durações, falhas e evidências constam do relatório de entrega.
 
 Screenshots são produzidos após verificações e em falhas. Ficam em `cypress/screenshots`, ignorados pelo Git e regenerados nas próximas execuções. O repositório exclui dependências, caches, relatórios, vídeos, configurações IntelliJ, `.env*` e `cypress.env.json`. `.env` não é carregado automaticamente. Não salvar credenciais ou tokens em código, fixtures ou argumentos.
 
-Repositório local preparado para revisão. **GitHub não publicado:** criar remoto e executar `git push` dependem de autorização do usuário.
+Destino da entrega: [edivann/desafio-qa-accenture](https://github.com/edivann/desafio-qa-accenture). A visibilidade definida é **privada**; é necessário acesso concedido pelo proprietário para visualizar ou clonar. Credenciais e evidências temporárias não integram o repositório.
 
 ## Referências
 
