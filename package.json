@@ -15,12 +15,20 @@
     "test:frontend": "cypress run --browser chrome --spec \"cypress/e2e/frontend/**/*.cy.js\"",
     "test:frontend:demoqa": "cypress run --browser chrome --spec \"cypress/e2e/frontend/practice-form.cy.js,cypress/e2e/frontend/web-tables.cy.js\"",
     "test:progress-bar": "cypress run --browser chrome --spec \"cypress/e2e/frontend/progress-bar.cy.js\"",
+    "test:sortable": "cypress run --browser chrome --spec \"cypress/e2e/frontend/sortable.cy.js\"",
     "cy:open": "cypress open --e2e",
     "cy:verify": "cypress verify",
     "cy:info": "cypress info"
   },
   "devDependencies": {
-    "cypress": "16.2.0"
+    "@cypress/puppeteer": "0.1.10",
+    "cypress": "16.2.0",
+    "puppeteer-core": "25.16.0"
+  },
+  "overrides": {
+    "@cypress/puppeteer": {
+      "puppeteer-core": "$puppeteer-core"
+    }
   },
   "allowScripts": {
     "cypress@16.2.0": true

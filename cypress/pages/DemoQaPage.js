@@ -17,6 +17,11 @@ class DemoQaPage {
     cy.get('a[href="/widgets"]').click();
     return cy.get('a[href="/progress-bar"]').click();
   }
+
+  openSortable() {
+    cy.get('a[href="/interaction"]').click();
+    return cy.get('a[href="/sortable"]').click();
+  }
 }
 
 export default new DemoQaPage();

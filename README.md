@@ -365,5 +365,21 @@ e relatórios gerados estão no `.gitignore`.
 
 ## Referências
 
+## Sortable — TC-SO-001
+
+Execute `npm run test:sortable`. O teste navega até Interactions → Sortable,
+usa a lista, troca One e Two por drag and drop nativo, valida a ordem alterada
+e restaura One, Two, Three, Four, Five, Six com novo arraste. Eventos dragstart
+e drop precisam ser isTrusted; uma lista que não mudar reprova o teste.
+
+A integração oficial @cypress/puppeteer usa puppeteer-core 25.16.0 fixado também
+por override, evitando dependências antigas vulneráveis do plugin. A ponte Node
+normaliza coordenadas pela escala do iframe Cypress e não altera a lista no DOM.
+O modo validado é Chrome headless. Chrome padrão >=137 em modo interativo é
+uma limitação do plugin; para headed, usar uma variante compatível indicada na
+documentação oficial, como Chrome for Testing, Chromium ou Electron.
+
+## Referências técnicas
+
 - [Instalação do Cypress](https://docs.cypress.io/app/get-started/install-cypress)
 - [Upload com selectFile](https://docs.cypress.io/api/commands/selectfile)
