@@ -16,6 +16,7 @@
     "test:frontend:demoqa": "cypress run --browser chrome --spec \"cypress/e2e/frontend/practice-form.cy.js,cypress/e2e/frontend/web-tables.cy.js\"",
     "test:progress-bar": "cypress run --browser chrome --spec \"cypress/e2e/frontend/progress-bar.cy.js\"",
     "test:sortable": "cypress run --browser chrome --spec \"cypress/e2e/frontend/sortable.cy.js\"",
+    "test:browser-windows": "cypress run --browser chrome --spec \"cypress/e2e/frontend/browser-windows.cy.js\"",
     "cy:open": "cypress open --e2e",
     "cy:verify": "cypress verify",
     "cy:info": "cypress info"

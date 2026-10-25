@@ -381,5 +381,19 @@ documentação oficial, como Chrome for Testing, Chromium ou Electron.
 
 ## Referências técnicas
 
+## Browser Windows — TC-BW-001
+
+Execute `npm run test:browser-windows`. A navegação passa por Alerts, Frame &
+Windows → Browser Windows e aciona New Window. A ponte oficial acessa a página
+criada pelo clique e retorna sua mensagem, URL e identidade ao teste Cypress.
+A spec exige IDs de página e janela novos, uma página adicional, mensagem exata
+This is a sample page, fechamento confirmado e retorno à quantidade inicial de
+páginas, com a janela original preservada. Não há stub de window.open.
+O helper fecha a janela também se a leitura falhar, preservando erros de leitura
+e limpeza. A execução validada usa Chrome headless; vale a limitação de headed
+do plugin descrita em Sortable.
+
+## Referências da implementação
+
 - [Instalação do Cypress](https://docs.cypress.io/app/get-started/install-cypress)
 - [Upload com selectFile](https://docs.cypress.io/api/commands/selectfile)

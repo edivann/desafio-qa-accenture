@@ -54,4 +54,52 @@ async function dragSortableItem(browser, { pathname, selector, from, to, placeme
     nativeDrop: events.some((event) => event.type === 'drop' && event.trusted) };
 }
 
-module.exports = { dragSortableItem, findApplicationFrame };
+async function pageIdentity(page) {
+  const session = await page.createCDPSession();
+  try {
+    const { targetInfo } = await session.send('Target.getTargetInfo');
+    const { windowId } = await session.send('Browser.getWindowForTarget', { targetId: targetInfo.targetId });
+    return { targetId: targetInfo.targetId, windowId };
+  } finally { await session.detach(); }
+}
+
+async function snapshotWindows(browser, { pathname }) {
+  const { page } = await findApplicationFrame(browser, pathname);
+  const pages = await browser.pages();
+  return { parent: await pageIdentity(page), pages: await Promise.all(pages.map(pageIdentity)) };
+}
+
+async function inspectAndCloseWindow(browser, { pathname, baseline, messageSelector, screenshotPath }) {
+  const { page: parent } = await findApplicationFrame(browser, pathname);
+  const target = await browser.waitForTarget(async (candidate) => {
+    if (candidate.type() !== 'page' || candidate.opener() !== parent.target()) return false;
+    const candidatePage = await candidate.page();
+    if (!candidatePage) return false;
+    const identity = await pageIdentity(candidatePage);
+    return !baseline.pages.some((item) => item.targetId === identity.targetId);
+  }, { timeout: 15000 });
+  const child = await target.page();
+  let result;
+  let failure;
+  try {
+    await child.bringToFront();
+    await child.waitForSelector(messageSelector, { visible: true, timeout: 15000 });
+    result = {
+      child: await pageIdentity(child), url: child.url(),
+      message: await child.$eval(messageSelector, (el) => el.textContent.trim()),
+      pageCountWhileOpen: (await browser.pages()).length,
+    };
+    require('node:fs').mkdirSync(require('node:path').dirname(screenshotPath), { recursive: true });
+    await child.screenshot({ path: screenshotPath });
+  } catch (error) { failure = error; }
+  try { await child.close(); }
+  catch (cleanupError) {
+    if (failure) throw new AggregateError([failure, cleanupError], 'Falha na janela e em seu fechamento.');
+    throw cleanupError;
+  }
+  if (failure) throw failure;
+  return { ...result, closed: child.isClosed(), parentClosed: parent.isClosed(),
+    pageCountAfterClose: (await browser.pages()).length };
+}
+
+module.exports = { dragSortableItem, snapshotWindows, inspectAndCloseWindow };

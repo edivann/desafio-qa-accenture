@@ -2,7 +2,7 @@ const { defineConfig } = require('cypress');
 const { startSmokeServer } = require('./scripts/smoke-server');
 const { setup } = require('@cypress/puppeteer');
 const puppeteer = require('puppeteer-core');
-const { dragSortableItem } = require('./scripts/browser-actions.cjs');
+const browserActions = require('./scripts/browser-actions.cjs');
 
 module.exports = defineConfig({
   viewportWidth: 1280,
@@ -17,7 +17,7 @@ module.exports = defineConfig({
     fixturesFolder: 'cypress/fixtures',
     testIsolation: true,
     async setupNodeEvents(on, config) {
-      setup({ on, puppeteer, onMessage: { dragSortableItem } });
+      setup({ on, puppeteer, onMessage: browserActions });
       const { server, origin } = await startSmokeServer();
 
       // Uma porta livre evita conflitos com outros projetos ou aplicações.

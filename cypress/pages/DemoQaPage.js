@@ -22,6 +22,11 @@ class DemoQaPage {
     cy.get('a[href="/interaction"]').click();
     return cy.get('a[href="/sortable"]').click();
   }
+
+  openBrowserWindows() {
+    cy.get('a[href="/alertsWindows"]').click();
+    return cy.get('a[href="/browser-windows"]').click();
+  }
 }
 
 export default new DemoQaPage();
