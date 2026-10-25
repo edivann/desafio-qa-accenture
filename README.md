@@ -1,416 +1,150 @@
 # Desafio QA Accenture
 
-Projeto independente de automação de API e Frontend em JavaScript com Cypress.
-Etapa 1: estrutura e validação do ambiente com uma aplicação local de demonstração.
-Etapa 2: fluxo completo da API Book Store do DemoQA, explicado abaixo.
-Etapa 3: Practice Form e Web Tables no Frontend real do DemoQA.
-Etapa 4.1: Progress Bar com dois cenários independentes.
-
-## Diretriz permanente de arquitetura
-
-Os novos cenários devem priorizar blocos `it()` pequenos e independentes, com
-títulos descritivos e IDs como `[TC-001]`. Usar `beforeEach()` e helpers para
-pré-condições quando apropriado; cada teste deve poder executar individualmente,
-sempre que possível, sem depender do estado deixado por outro teste.
-
-Page Objects concentram seletores e interações; as specs mantêm as asserções
-principais. Ações da mesma validação e fluxos integrados exigidos pelo desafio
-devem permanecer juntos, sem fragmentação artificial.
-
-O padrão completo está em [AGENTS.md](AGENTS.md). Os testes aprovados serão
-preservados até concluir Browser Windows, Progress Bar e Sortable. Na revisão
-final, a divisão de Book Store e Web Tables será avaliada com preservação da
-cobertura, execução individual dos cenários afetados e regressão completa.
-
-## Requisitos
-
-- Node.js 24.x (versão de referência em `.nvmrc`).
-- npm 10 ou superior.
-- Git.
-- Google Chrome para a execução padrão.
-- Internet na primeira instalação para baixar os pacotes e o binário do Cypress.
-
-O projeto usa Chrome por padrão. Para usar outro navegador instalado, por exemplo
-Edge, adicione `-- --browser edge` ao comando de teste.
+Automação independente de API e Frontend do [DemoQA](https://demoqa.com/), em JavaScript, Cypress e Page Object Model. São **9 testes obrigatórios em 6 funcionalidades**, além de **5 Smoke locais**. O bônus Cucumber permanece **não concluído** devido ao comportamento de exclusão de múltiplos registros do site. Não integra a suíte estável. Veja [o diagnóstico](docs/bonus-cucumber-bloqueado.md).
 
 ## Instalação
 
-No terminal, entre na pasta deste projeto e execute:
+Requisitos: Node.js 24.x (referência 24.22.1 em `.nvmrc`), npm >=10, Git e Google Chrome instalado. Internet é necessária para instalar pacotes/binário do Cypress e executar os testes do DemoQA. Ambiente validado: Windows, Chrome 156 headless e Cypress 16.2.0.
+
+Abra **esta pasta** no IntelliJ IDEA, abra seu terminal e execute:
 
 ```sh
 npm ci
 npm run cy:verify
+npm run test:challenge
 ```
 
-O `package-lock.json` fixa as versões para uma instalação reproduzível. Use
-`npm install` quando precisar alterar as dependências. Se o binário não for
-baixado durante a instalação, execute `npx cypress install`.
+O lockfile fixa a instalação. Se o binário não tiver sido baixado, execute `npx cypress install`. No PowerShell, se `npm.ps1` for bloqueado, use `npm.cmd`, sem alterar a política da máquina.
 
-No PowerShell, se a política de execução bloquear `npm.ps1`, use `npm.cmd`
-nos comandos, sem alterar a política da máquina.
-
-Se `npm --version` apontar para uma instalação global antiga, confira a versão
-do npm que acompanha o Node.js e use seu CLI diretamente. No PowerShell:
+Se o terminal resolver um npm global antigo, use o que acompanha o Node:
 
 ```powershell
 $taskNpm = Join-Path (Split-Path (Get-Command node).Source) 'node_modules/npm/bin/npm-cli.js'
 node $taskNpm --version
 node $taskNpm ci
-node $taskNpm test
+node $taskNpm run test:challenge
 ```
 
-Esse procedimento não muda a instalação global de npm.
+Em redes com certificados corporativos confiáveis no Windows, um erro `UNABLE_TO_VERIFY_LEAF_SIGNATURE` pode ser resolvido com `$env:NODE_USE_SYSTEM_CA = '1'` antes dos comandos. Isso mantém a validação TLS. Não é preciso mudar o npm global ou desabilitar certificados.
 
-Em uma rede com certificados corporativos confiáveis no Windows, caso o Node
-reporte `UNABLE_TO_VERIFY_LEAF_SIGNATURE`, execute `$env:NODE_USE_SYSTEM_CA = '1'`
-no PowerShell antes da instalação. Isso usa os certificados do sistema e mantém
-a validação TLS habilitada.
+## Comandos
 
-## Execução
+Os comandos de teste usam Chrome headless.
 
-| Comando | Finalidade |
-| --- | --- |
-| `npm test` | Todos os testes, em Chrome sem interface gráfica |
-| `npm run test:smoke` | Validação inicial de API, Frontend e seleção de TXT |
-| `npm run test:api` | Apenas a pasta de API |
-| `npm run test:bookstore` | Apenas o fluxo completo da API Book Store do DemoQA |
-| `npm run test:frontend` | Apenas a pasta de Frontend |
-| `npm run test:frontend:demoqa` | Somente os dois cenários da Etapa 3 |
-| `npm run test:progress-bar` | Somente os dois cenários da Progress Bar |
-| `npm run cy:open` | Interface interativa do Cypress |
-| `npm run cy:verify` | Verificação do binário do Cypress |
-| `npm run cy:info` | Diagnóstico do ambiente e navegadores |
+| Comando | Escopo | Casos |
+| --- | --- | ---: |
+| `npm run test:challenge` | Somente os seis módulos Accenture | 9 |
+| `npm run test:smoke` | API e Frontend da aplicação local | 5 |
+| `npm test` | Desafio e Smoke | 14 |
+| `npm run test:bookstore` | Fluxo integrado Book Store | 1 |
+| `npm run test:frontend:demoqa` | Practice Form e Web Tables | 4 |
+| `npm run test:progress-bar` | Progress Bar | 2 |
+| `npm run test:sortable` | Sortable | 1 |
+| `npm run test:browser-windows` | Janela real | 1 |
+| `npm run test:api` | Book Store e Smoke API | 4 |
+| `npm run test:frontend` | Frontend do desafio e Smoke UI | 10 |
+| `npm run cy:open` | Runner interativo; ver restrição abaixo | — |
+| `npm run cy:verify` / `npm run cy:info` | Diagnóstico do ambiente | — |
 
-O servidor de demonstração inicia automaticamente na interface de loopback,
-em uma porta livre. Em modo de execução, ele é encerrado após os testes. No modo
-interativo, é encerrado junto com o processo de configuração do Cypress.
-Não é preciso iniciar outro terminal ou definir uma porta fixa.
-Esse servidor é usado pelos smoke tests locais. Os cenários das Etapas 2 e 3
-acessam o DemoQA real, que precisa estar disponível durante a execução.
+Uma spec ou caso individual pode ser selecionado pelo filtro oficial `@cypress/grep`:
 
-## Estrutura
+```sh
+npm test -- --spec cypress/e2e/frontend/practice-form.cy.js
+npm test -- --spec cypress/e2e/frontend/web-tables.cy.js --expose grep=TC-WT-002,grepOmitFiltered=true
+npm test -- --spec cypress/e2e/frontend/progress-bar.cy.js --expose grep=TC-PB-001,grepOmitFiltered=true
+```
+
+Não há filtros ativos por padrão, `only`, `skip`, retries de teste, pausas fixas com `cy.wait`, cliques forçados ou exceções ignoradas.
+
+O servidor Smoke inicia automaticamente em `127.0.0.1`, numa porta livre, e encerra após a execução. `test:smoke` usa também a URL local na verificação inicial do Cypress, sem depender da disponibilidade do DemoQA. Na suíte completa, os Smoke continuam usando URLs locais absolutas.
+
+URLs opcionais: `--config baseUrl=https://demoqa.com` para o Frontend e `--expose apiUrl=https://demoqa.com` para API. Contratos e seletores permanecem específicos do DemoQA; trocar a URL não torna a suíte genérica.
+
+## Matriz de cobertura
+
+| ID | Funcionalidade | Ações e resultados verificados |
+| --- | --- | --- |
+| TC-API-001 | Book Store | Usuário único, token válido, autorização, catálogo, associação de dois ISBNs distintos e consulta da coleção do mesmo usuário |
+| TC-PF-001 | Practice Form | Navegação desde Home, dados válidos e dinâmicos, calendário, assuntos, hobbies, estado/cidade, TXT; comparação de dez valores do modal; fechamento por Escape e ausência |
+| TC-WT-001 | Cadastro | Criação de registro próprio e comparação das seis células |
+| TC-WT-002 | Edição | Cadastro como pré-condição, alteração dos seis campos, valores novos e ausência do e-mail anterior |
+| TC-WT-003 | Exclusão | Cadastro e edição próprios com validações intermediárias; exclusão e ausência sem filtro de busca |
+| TC-PB-001 | Interromper progresso | Início, pausa em 20%, valor positivo abaixo de 25% e estabilidade após mais intervalos |
+| TC-PB-002 | Retomar e resetar | Pausa própria, retomada a 100%, Reset, 0%, Start disponível, Reset ausente e manutenção do zero |
+| TC-SO-001 | Sortable | Arraste de One após Two, mudança real, novo arraste e ordem One a Six; eventos nativos confiáveis |
+| TC-BW-001 | Browser Windows | New Window real, IDs distintos de página/janela, leitura da mensagem, fechamento e preservação da original |
+| INF-API-001 a 003 | Smoke API local | Saúde JSON, criação fictícia e rota inexistente 404 |
+| INF-UI-001 a 002 | Smoke UI local | Página, comunicação com API, seleção e leitura do TXT |
+
+Os cinco casos INF validam infraestrutura; não contam como requisitos Accenture. TC-BDD-001, investigado para o bônus, não está aprovado nem incluído nessa contagem.
+
+## Arquitetura e decisões
 
 ```text
-desafio-qa-accenture/
-├── cypress/
-│   ├── e2e/
-│   │   ├── api/
-│   │   │   ├── bookstore.cy.js
-│   │   │   └── smoke.cy.js
-│   │   └── frontend/
-│   │       ├── practice-form.cy.js
-│   │       ├── progress-bar.cy.js
-│   │       ├── smoke.cy.js
-│   │       └── web-tables.cy.js
-│   ├── fixtures/
-│   │   ├── demoqa-options.json
-│   │   ├── smoke.json
-│   │   └── uploads/arquivo-teste.txt
-│   ├── pages/
-│   │   ├── DemoQaPage.js
-│   │   ├── PracticeFormPage.js
-│   │   ├── ProgressBarPage.js
-│   │   ├── SmokePage.js
-│   │   └── WebTablesPage.js
-│   └── support/
-│       ├── commands.js
-│       └── e2e.js
-├── scripts/
-│   ├── smoke-app/index.html
-│   └── smoke-server.js
-├── .gitattributes
-├── .gitignore
-├── .nvmrc
-├── cypress.config.js
-├── jsconfig.json
-├── package.json
-├── package-lock.json
-└── README.md
+cypress/
+  e2e/api/          bookstore.cy.js, smoke.cy.js
+  e2e/frontend/    practice-form, web-tables, progress-bar,
+                   sortable, browser-windows, smoke (.cy.js)
+  pages/           DemoQaPage, PracticeFormPage, WebTablesPage,
+                   ProgressBarPage, SortablePage, BrowserWindowsPage, SmokePage
+  fixtures/        demoqa-options.json, smoke.json, uploads/arquivo-teste.txt
+  support/         e2e.js, commands.js, utils/test-data.js
+scripts/
+  browser-actions.cjs     Ponte com o navegador para arraste e janela
+  smoke-server.js         Servidor local em porta livre
+  smoke-app/index.html    Aplicação mínima de diagnóstico
+docs/bonus-cucumber-bloqueado.md
+cypress.config.js
+package.json / package-lock.json
+AGENTS.md
 ```
 
-## Organização e próximos cenários
+As [diretrizes permanentes](AGENTS.md) exigem cenários pequenos e independentes. Page Objects concentram seletores/interações; specs contêm cenários e asserções. `beforeEach` prepara a navegação quando há múltiplos casos. `testIsolation: true` e dados próprios evitam dependência entre testes. Não há herança de páginas ou camadas sem responsabilidade útil.
 
-- API: `cy.request()` com o comando reutilizável `cy.apiRequest(options)`.
-- Frontend: Page Objects para ações e seletores; as verificações ficam nos testes.
-- Seletores: prefira `data-testid` e o comando `cy.getByTestId()`.
-- Fixtures: dados fictícios e arquivos de upload em `cypress/fixtures/`.
-- Upload: `selectFile()` nativo, sem plugin adicional. O smoke verifica seleção
-  e leitura do TXT no navegador; envio e persistência no backend dependem do desafio.
-- Testes independentes, isolamento habilitado e esperas por condições do Cypress,
-  sem pausas de duração fixa e sem esconder falhas com tentativas automáticas.
+Web Tables foi separado em cadastro, edição e exclusão. Cada caso prepara seus dados; a exclusão também cadastra e edita, preservando as validações do CRUD. As linhas são identificadas pelo e-mail único, sem posição ou ID numérico. `test-data.js` compartilha somente geradores utilizados.
 
-Para os testes reais, configure a URL do Frontend com `--config baseUrl=...`
-e a URL pública da API com `--expose apiUrl=...`, por exemplo:
+Book Store permanece integrado porque suas seis chamadas compõem o fluxo sequencial exigido. Separá-las em testes dependentes seria frágil; duplicar todo o preparo sem novas validações acrescentaria complexidade. ID, token e ISBNs são locais ao mesmo `it`, compartilhados por retornos encadeados de `.then()`. Uma falha interrompe o fluxo.
 
-```sh
-npm run test:frontend -- --config baseUrl=https://frontend.exemplo.com
-npm run test:api -- --expose apiUrl=https://api.exemplo.com
-```
+## Book Store: contrato e dados
 
-Os smoke tests continuam usando URLs absolutas do servidor local para validar
-o ambiente, mesmo quando as URLs reais forem configuradas. Novos testes podem
-usar `cy.visit('/')` e `cy.apiRequest({ method: 'GET', url: '/recurso' })`.
-Por padrão, `apiUrl` aponta para `https://demoqa.com`. O Frontend de demonstração
-continua usando a URL absoluta do servidor local; `baseUrl` agora aponta para
-`https://demoqa.com`, usado pelos dois cenários reais de Frontend.
+Referência: [Swagger DemoQA](https://demoqa.com/swagger/). `cy.apiRequest()` resolve a URL e delega para `cy.request()`.
 
-## Etapa 2 — API Book Store
+| Etapa | Método e endpoint | HTTP |
+| --- | --- | ---: |
+| Criar usuário | POST `/Account/v1/User` | 201 |
+| Gerar token | POST `/Account/v1/GenerateToken` | 200 |
+| Autorizar | POST `/Account/v1/Authorized` | 200 |
+| Consultar catálogo | GET `/BookStore/v1/Books` | 200 |
+| Associar livros | POST `/BookStore/v1/Books` | 201 |
+| Consultar coleção | GET `/Account/v1/User/{userId}` | 200 |
 
-Referência dos contratos: [Swagger oficial do DemoQA](https://demoqa.com/swagger/).
-O arquivo `cypress/e2e/api/bookstore.cy.js` contém um único teste com seis etapas.
-Execute com `npm run test:bookstore`. Os comandos `npm run test:api` e `npm test`
-também incluem esse fluxo e passam a depender da disponibilidade do DemoQA.
-Para validar somente a infraestrutura local, use `npm run test:smoke`.
+Além do HTTP e JSON, valida identidade, coleção inicial vazia, token não vazio com expiração futura, `status: Success`, autorização `true`, catálogo suficiente e exatamente os dois ISBNs associados. `Set` seleciona ISBNs distintos. A resposta real usa `userID` na criação e `userId` na consulta; essa diferença é explícita.
 
-| Etapa | Método e endpoint | HTTP esperado | Validações principais |
-| --- | --- | --- | --- |
-| 1. Criar usuário | `POST /Account/v1/User` | 201 | ID, nome enviado e coleção inicialmente vazia |
-| 2. Gerar token | `POST /Account/v1/GenerateToken` | 200 | `status` igual a `Success`, token não vazio e expiração futura |
-| 3. Verificar autorização | `POST /Account/v1/Authorized` | 200 | Corpo booleano `true` |
-| 4. Consultar catálogo | `GET /BookStore/v1/Books` | 200 | Livros com ISBN e título; ao menos dois ISBNs distintos |
-| 5. Associar livros | `POST /BookStore/v1/Books` | 201 | Exatamente os dois ISBNs selecionados |
-| 6. Consultar usuário | `GET /Account/v1/User/{userId}` | 200 | Mesmo ID e nome, coleção com exatamente os dois ISBNs |
+Login curto combina timestamp e parte de UUID; a senha usa outro UUID com prefixo que satisfaz a política. Não há conta pessoal ou ISBN fixo. Requisições sensíveis usam `log: false`, e o token não é impresso nas asserções nem persistido. HTTP inesperado ou erro no corpo reprova o teste com indicação da etapa. `failOnStatusCode: false` permite diagnosticar a resposta, sem aprová-la automaticamente. Retries de requisição estão desabilitados nesse fluxo.
 
-### Como explicar o teste
+## Interações reais e limites
 
-1. O nome combina `qa`, timestamp em base 36 e seis caracteres de um UUID aleatório.
-   Ele é curto e muda a cada execução. A senha usa outro `crypto.randomUUID()`,
-   com prefixo que garante letras maiúsculas, minúsculas, número e caractere
-   especial. Não há credenciais pessoais ou ISBNs fixos.
-2. Cada chamada usa `cy.apiRequest()`, que delega para `cy.request()`. O retorno
-   de cada chamada é encadeado com `.then()`. A etapa seguinte só começa depois
-   das asserções da etapa anterior; uma falha interrompe o fluxo.
-3. `userId`, `token` e `selectedIsbns` são variáveis locais do mesmo teste. Elas
-   são preenchidas antes da construção das requisições que dependem delas.
-   Não há dependência entre testes separados, arquivos ou execuções.
-4. O catálogo fornece os ISBNs. `Set` elimina duplicações e `slice(0, 2)` escolhe
-   dois distintos. O teste falha se o catálogo não oferecer essa quantidade.
-5. O token vai no cabeçalho `Authorization: Bearer ...` nas chamadas protegidas.
-   Credenciais e token não são gravados em fixtures ou arquivos; `log: false`
-   desabilita o log das requisições. Asserções não imprimem o valor do token.
-6. Além dos códigos HTTP, o teste valida o conteúdo. O token, por exemplo, pode
-   vir com HTTP 200 e indicar erro no campo `status`; isso também causa falha.
+- **Practice Form:** Picture aceita o TXT solicitado; valida seleção e nome na confirmação, sem comprovar persistência em backend. O botão Close apresentou historicamente `findDOMNode is not a function`. O caminho validado é Escape, com asserção de fechamento. O botão não foi retestado nesta conclusão nem é tratado como corrigido.
+- **Progress Bar:** o componente consultado usa `setInterval(100)`. O relógio controla somente `setInterval`/`clearInterval` após a navegação. Cada `cy.tick(100)` executa o callback real e aguarda `aria-valuenow`. Após 100%, um callback adicional permite a limpeza do intervalo. Não se escreve no estado/DOM. Cobre transições, sem medir duração real ou fluidez. Mudança do timer exige reavaliação.
+- **Sortable:** o worker usa o mouse nativo do Chrome e normaliza coordenadas pela escala do iframe Cypress. Observa `dragstart`/`drop` com `isTrusted`, sem ordenar o DOM por JavaScript. Mudança e restauração da ordem são asserções da spec.
+- **Browser Windows:** acessa a página criada pelo clique, consulta identidades via CDP, lê `This is a sample page` e fecha a janela. Compara a quantidade de páginas antes/durante/depois e preserva a original. Não há stub de `window.open`. Erros de leitura e limpeza são propagados.
+- **Plugin:** a integração oficial `@cypress/puppeteer` 0.1.10 é experimental. Chrome padrão >=137 em modo headed tem restrição no plugin. O modo aprovado é Chrome headless. Para interatividade, consulte variantes compatíveis na documentação (Electron, Chromium ou Chrome for Testing); não foram validadas nesta entrega.
+- **Dependências:** `puppeteer-core` 25.16.0 está fixado e aplicado por override também ao plugin, retirando sua árvore antiga vulnerável. Não baixa outro navegador. Essa combinação foi validada neste ambiente; atualizações exigem regressão.
+- **Serviço externo:** rede, disponibilidade do DemoQA, autenticação e catálogo insuficiente podem reprovar execuções. Um login de 49 caracteres já retornou 500 no token após cadastro 201; o login curto funcionou. Limite exato e causa interna não foram confirmados. Cada execução mantém sua conta fictícia, pois exclusão de conta não faz parte do fluxo solicitado.
 
-### Diagnóstico e limites
+## Validação e entrega
 
-`failOnStatusCode: false` permite que `validateResponse()` compare o HTTP esperado
-com o recebido e inclua a etapa, o código e a mensagem da API na falha. Isso não
-transforma erros em sucesso. Não há `catch` para ignorar erros, mocks, pausas fixas
-ou tentativas automáticas de requisição neste fluxo.
+A conclusão inclui instalação limpa, auditoria, seis specs isoladas, os nove casos do desafio juntos, os 14 casos completos e repetição dos nove obrigatórios. Web Tables também foi executado por ID após sua divisão. Progress Bar preserva os dois casos independentes já validados. Contagens, durações, falhas investigadas e evidências constam do relatório de entrega. O bônus bloqueado não é apresentado como aprovado.
 
-A API real retorna `userID` na criação e `userId` na consulta. O Swagger descreve
-`userId` nos dois modelos; o teste explicita essa diferença, sem aceitar ambos
-indiscriminadamente.
+Screenshots são produzidos após verificações e em falhas. Ficam em `cypress/screenshots`, ignorados pelo Git e regenerados nas próximas execuções. O repositório exclui dependências, caches, relatórios, vídeos, configurações IntelliJ, `.env*` e `cypress.env.json`. `.env` não é carregado automaticamente. Não salvar credenciais ou tokens em código, fixtures ou argumentos.
 
-Na investigação inicial, um nome com 49 caracteres foi aceito no cadastro (201),
-mas a geração do token retornou 500 com uma página HTML apontando erro de atualização
-no banco do servidor. Repetindo as chamadas com um nome único de 16 caracteres,
-a geração do token retornou 200 e a autorização retornou `true`. Por isso o gerador
-mantém nomes curtos. O Swagger não informa o limite; não foi determinado um limite
-exato nem confirmada a causa interna. Respostas HTML de erro também têm um trecho
-incluído na mensagem de falha, sem transformar o HTTP 500 em sucesso.
-
-O DemoQA é um serviço público externo: falhas de rede, autenticação, indisponibilidade
-ou catálogo insuficiente devem falhar no teste e ser investigadas. Cada execução
-cria uma conta fictícia e mantém a coleção nela; exclusão de contas não faz parte
-deste fluxo. A Etapa 2 não adicionou cenários de Frontend ou bônus de Cucumber.
-
-### Validação executada
-
-- `npm run test:bookstore`: 1 teste aprovado, com as seis etapas completas.
-- `npm test`: 6 testes aprovados em 3 specs, sem falhas, pendências ou ignorados.
-  Inclui outra execução do fluxo real com novo usuário e os cinco smoke tests
-  já existentes. Ambos os comandos terminaram com código de saída zero em
-  Chrome 156 headless, Cypress 16.2.0 e Node.js 24.22.1.
-
-## Etapa 3 — Practice Form e Web Tables
-
-Execute apenas os dois novos cenários com:
-
-```sh
-npm run test:frontend:demoqa
-```
-
-`npm run test:frontend` também executa os dois smoke tests locais de Frontend.
-`npm test` inclui todos os cenários, inclusive o fluxo real de API da Etapa 2.
-
-### Practice Form
-
-O teste começa na página inicial e navega por Forms → Practice Form. Preenche
-nome, sobrenome, e-mail único, gênero, celular válido com dez dígitos, nascimento,
-dois assuntos, os três hobbies, endereço, estado e cidade compatível. A data
-é selecionada pelo calendário; os componentes de assunto, estado e cidade
-são preenchidos pelas opções visíveis da interface.
-
-O TXT existente em `cypress/fixtures/uploads/arquivo-teste.txt` é selecionado
-com `selectFile()`. O teste confere o arquivo selecionado, submete o formulário,
-valida a visibilidade do modal e compara as dez linhas da confirmação com o
-objeto usado no preenchimento. Depois fecha o modal com Escape e verifica
-que ele deixou de existir e que o formulário permanece visível.
-
-O campo tem o rótulo Picture, mas atualmente aceita o TXT solicitado. A verificação
-cobre sua seleção e o nome exibido na confirmação; persistência em um servidor
-não faz parte deste cenário.
-
-### Web Tables
-
-O teste começa na página inicial e navega por Elements → Web Tables. Cria um
-registro com e-mail único e valida as seis células de dados na tabela. Em seguida,
-edita todos os campos, verifica os novos valores e a ausência do e-mail anterior,
-exclui somente o registro criado e confirma que ele não existe mais.
-
-As ações Edit e Delete são localizadas dentro da linha do e-mail do teste,
-sem depender do número do registro ou da posição da linha. A ausência é validada
-na tabela sem filtro de busca, para evitar uma conclusão baseada em um filtro
-que apenas esconde o registro.
-
-### Organização e dados
-
-- `DemoQaPage`: navegação a partir da página inicial, compartilhada pelos cenários.
-- `PracticeFormPage` e `WebTablesPage`: seletores e ações de cada página, seguindo
-  o padrão do Page Object existente. As asserções ficam nos arquivos de teste.
-- `demoqa-options.json`: opções válidas dos componentes e dados fictícios para
-  sorteio. E-mails usam UUID; nomes, data, gênero, celular, assuntos, localização,
-  idade e salário são gerados ou selecionados a cada execução. Os dias variam
-  de 1 a 28 para manter a data válida em todos os meses.
-- Não foram adicionadas dependências. Não há esperas fixas, cliques forçados,
-  remoção de elementos da página ou handlers para ignorar exceções da aplicação.
-- Screenshots após as verificações ficam em `cypress/screenshots/`: confirmação
-  do formulário, registro editado e tabela após a exclusão. São evidências locais
-  ignoradas pelo Git.
-
-### Dificuldade encontrada no site
-
-O botão Close da confirmação do Practice Form lança `findDOMNode is not a function`
-no código atual do DemoQA. A primeira execução falhou nesse ponto, depois de
-validar todos os dados do modal. O modal também oferece fechamento por Escape,
-que aciona seu handler nativo de fechamento; esse é o caminho usado no teste.
-A ausência do modal continua sendo uma asserção obrigatória. O defeito do botão
-permanece no site e não é tratado como corrigido pela automação.
-
-Nenhum cenário adicional de Frontend ou Cucumber foi implementado nesta etapa.
-
-### Validação da Etapa 3
-
-- `npm run test:frontend:demoqa`: os dois novos cenários aprovados no Chrome.
-- `npm test`: 8 testes aprovados em 5 specs, incluindo a API Book Store e os
-  smoke tests existentes; zero falhas, pendências ou ignorados; código de saída 0.
-- As verificações incluem as dez linhas da confirmação, a ausência do modal
-  após Escape, os seis campos da tabela antes e depois da edição e a ausência
-  do registro excluído. O fechamento do botão Close permanece um defeito conhecido.
-
-## Etapa 4.1 — Progress Bar
-
-```sh
-npm run test:progress-bar
-```
-
-| ID | Cenário | Verificações |
-| --- | --- | --- |
-| TC-PB-001 | Interromper antes de 25% | Avança até 20%, clica Stop, confere valor maior que zero e menor que 25%, avança mais vinte intervalos e confirma que permaneceu parado |
-| TC-PB-002 | Retomar, concluir e resetar | Prepara sua própria pausa em 20%, comprova a parada, retoma até 100%, aciona Reset e verifica 0%, Start disponível, Reset ausente e manutenção do zero |
-
-Cada `it()` usa `beforeEach()` para acessar a página inicial e navegar por
-Widgets → Progress Bar. A página começa em 0% para cada cenário. O helper local
-`startAndPause()` prepara a pausa separadamente em cada teste; nenhum estado
-é compartilhado entre os dois. `ProgressBarPage` centraliza seletores e ações;
-as asserções ficam na spec. `DemoQaPage` ganhou somente a navegação necessária.
-
-### Compatibilidade com o relógio e funcionamento real
-
-O código público do DemoQA consultado usa `setInterval` com 100 ms e incrementa
-o estado do componente em um ponto percentual a cada callback. O teste instala
-`cy.clock()` depois da navegação e controla somente `setInterval` e `clearInterval`.
-Date, timeouts e os demais mecanismos continuam com o comportamento normal.
-
-O helper `advanceProgress()` usa `cy.tick(100)` e aguarda a atualização de
-`aria-valuenow` a cada ponto. Essa sincronização permite que o React renderize
-o estado antes do próximo callback, evitando concentrar vários incrementos
-em um único avanço de relógio. O teste não escreve o valor da barra no DOM ou
-no estado React: as alterações são produzidas pelos callbacks reais da aplicação.
-
-Após alcançar 100%, um callback adicional de 100 ms permite a limpeza do intervalo
-que o componente realiza quando seu contador interno ultrapassa 100, mantendo
-100% visíveis. O teste então aciona Reset e confirma que o zero permanece após
-mais vinte intervalos. Os avanços de tempo representam o timer observado e a
-janela de verificação da parada; não são esperas fixas reais com `cy.wait()`.
-
-O relógio é restaurado pelo Cypress entre os testes. Não houve alteração global
-de configuração, dependências novas, mocks, cliques forçados ou exceções ignoradas.
-Se a aplicação mudar o timer, a implementação deve ser reavaliada. A cobertura
-verifica as transições de estado e o valor exibido; duração real e fluidez da
-animação não são objetivos destes testes com relógio controlado.
-
-Os comandos `npm run test:frontend` e `npm test` incluem os dois cenários novos.
-`test:frontend:demoqa` continua selecionando especificamente os dois cenários
-da Etapa 3. Browser Windows, Sortable e Cucumber seguem fora desta implementação.
-
-### Validação da Etapa 4.1
-
-- TC-PB-001 isolado: 1 teste aprovado no Chrome.
-- TC-PB-002 isolado: 1 teste aprovado no Chrome, com sua própria pré-condição.
-- Dois cenários juntos: 2 aprovados; repetição consecutiva: 2 aprovados novamente.
-- `npm test`: 10 testes aprovados em 6 specs, incluindo os oito anteriores;
-  zero falhas, pendências ou ignorados; código de saída 0.
-
-A seleção individual usou `it.only()` temporário, com restauração da spec e
-conferência de hash após cada execução. A versão final contém os dois `it()`
-normais e nenhuma seleção ou exclusão. Configuração, dependências e os testes
-aprovados das etapas anteriores foram preservados.
-
-Não salve credenciais no código, em fixtures ou em argumentos de linha de comando.
-Forneça segredos por variáveis de ambiente na execução. `.env` não é carregado
-automaticamente. `cypress.env.json`, `.env*`, dependências, screenshots, vídeos
-e relatórios gerados estão no `.gitignore`.
+Repositório local preparado para revisão. **GitHub não publicado:** criar remoto e executar `git push` dependem de autorização do usuário.
 
 ## Referências
 
-## Sortable — TC-SO-001
-
-Execute `npm run test:sortable`. O teste navega até Interactions → Sortable,
-usa a lista, troca One e Two por drag and drop nativo, valida a ordem alterada
-e restaura One, Two, Three, Four, Five, Six com novo arraste. Eventos dragstart
-e drop precisam ser isTrusted; uma lista que não mudar reprova o teste.
-
-A integração oficial @cypress/puppeteer usa puppeteer-core 25.16.0 fixado também
-por override, evitando dependências antigas vulneráveis do plugin. A ponte Node
-normaliza coordenadas pela escala do iframe Cypress e não altera a lista no DOM.
-O modo validado é Chrome headless. Chrome padrão >=137 em modo interativo é
-uma limitação do plugin; para headed, usar uma variante compatível indicada na
-documentação oficial, como Chrome for Testing, Chromium ou Electron.
-
-## Referências técnicas
-
-## Browser Windows — TC-BW-001
-
-Execute `npm run test:browser-windows`. A navegação passa por Alerts, Frame &
-Windows → Browser Windows e aciona New Window. A ponte oficial acessa a página
-criada pelo clique e retorna sua mensagem, URL e identidade ao teste Cypress.
-A spec exige IDs de página e janela novos, uma página adicional, mensagem exata
-This is a sample page, fechamento confirmado e retorno à quantidade inicial de
-páginas, com a janela original preservada. Não há stub de window.open.
-O helper fecha a janela também se a leitura falhar, preservando erros de leitura
-e limpeza. A execução validada usa Chrome headless; vale a limitação de headed
-do plugin descrita em Sortable.
-
-## Referências da implementação
-
-## Alinhamento final dos cenários
-
-Web Tables agora possui TC-WT-001 (cadastro), TC-WT-002 (edição) e TC-WT-003
-(exclusão), com dados próprios. A exclusão também prepara cadastro e edição,
-preservando a sequência CRUD e suas verificações. Book Store permanece integrado
-em TC-API-001: dividir suas seis etapas em testes dependentes violaria o fluxo
-contínuo exigido. Practice Form usa TC-PF-001 e mantém os dez dados e Escape.
-Os cinco testes locais usam IDs INF, distintos dos casos do desafio.
-
-Execute `npm run test:challenge` para selecionar somente os seis módulos do
-desafio. `npm run test:smoke` seleciona a infraestrutura local. Para um caso
-isolado: `npm run test:frontend -- --spec cypress/e2e/frontend/web-tables.cy.js
---expose grep=TC-WT-001,grepOmitFiltered=true`. O filtro oficial não está ativo
-nas execuções normais; nenhum it.only ou it.skip faz parte das specs.
-
-## Referências das bibliotecas
-
 - [Instalação do Cypress](https://docs.cypress.io/app/get-started/install-cypress)
-- [Upload com selectFile](https://docs.cypress.io/api/commands/selectfile)
+- [cy.request](https://docs.cypress.io/api/commands/request)
+- [selectFile](https://docs.cypress.io/api/commands/selectfile)
+- [clock](https://docs.cypress.io/api/commands/clock)
+- [Integração oficial Puppeteer](https://github.com/cypress-io/cypress/tree/develop/npm/puppeteer)
+- [Filtro oficial](https://github.com/cypress-io/cypress/tree/develop/npm/grep)

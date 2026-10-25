@@ -21,7 +21,7 @@ module.exports = defineConfig({
       const { server, origin } = await startSmokeServer();
 
       // Uma porta livre evita conflitos com outros projetos ou aplicações.
-      config.baseUrl = config.baseUrl || 'https://demoqa.com';
+      config.baseUrl = config.expose.smokeOnly ? origin : config.baseUrl || 'https://demoqa.com';
       config.expose.smokeUrl = origin;
       config.expose.apiUrl = config.expose.apiUrl || 'https://demoqa.com';
 
