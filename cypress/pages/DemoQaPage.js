@@ -12,6 +12,11 @@ class DemoQaPage {
     cy.get('a[href="/elements"]').click();
     return cy.get('a[href="/webtables"]').click();
   }
+
+  openProgressBar() {
+    cy.get('a[href="/widgets"]').click();
+    return cy.get('a[href="/progress-bar"]').click();
+  }
 }
 
 export default new DemoQaPage();

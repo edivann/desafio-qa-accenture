@@ -4,6 +4,7 @@ Projeto independente de automação de API e Frontend em JavaScript com Cypress.
 Etapa 1: estrutura e validação do ambiente com uma aplicação local de demonstração.
 Etapa 2: fluxo completo da API Book Store do DemoQA, explicado abaixo.
 Etapa 3: Practice Form e Web Tables no Frontend real do DemoQA.
+Etapa 4.1: Progress Bar com dois cenários independentes.
 
 ## Diretriz permanente de arquitetura
 
@@ -75,6 +76,7 @@ a validação TLS habilitada.
 | `npm run test:bookstore` | Apenas o fluxo completo da API Book Store do DemoQA |
 | `npm run test:frontend` | Apenas a pasta de Frontend |
 | `npm run test:frontend:demoqa` | Somente os dois cenários da Etapa 3 |
+| `npm run test:progress-bar` | Somente os dois cenários da Progress Bar |
 | `npm run cy:open` | Interface interativa do Cypress |
 | `npm run cy:verify` | Verificação do binário do Cypress |
 | `npm run cy:info` | Diagnóstico do ambiente e navegadores |
@@ -97,6 +99,7 @@ desafio-qa-accenture/
 │   │   │   └── smoke.cy.js
 │   │   └── frontend/
 │   │       ├── practice-form.cy.js
+│   │       ├── progress-bar.cy.js
 │   │       ├── smoke.cy.js
 │   │       └── web-tables.cy.js
 │   ├── fixtures/
@@ -106,6 +109,7 @@ desafio-qa-accenture/
 │   ├── pages/
 │   │   ├── DemoQaPage.js
 │   │   ├── PracticeFormPage.js
+│   │   ├── ProgressBarPage.js
 │   │   ├── SmokePage.js
 │   │   └── WebTablesPage.js
 │   └── support/
@@ -294,6 +298,65 @@ Nenhum cenário adicional de Frontend ou Cucumber foi implementado nesta etapa.
 - As verificações incluem as dez linhas da confirmação, a ausência do modal
   após Escape, os seis campos da tabela antes e depois da edição e a ausência
   do registro excluído. O fechamento do botão Close permanece um defeito conhecido.
+
+## Etapa 4.1 — Progress Bar
+
+```sh
+npm run test:progress-bar
+```
+
+| ID | Cenário | Verificações |
+| --- | --- | --- |
+| TC-PB-001 | Interromper antes de 25% | Avança até 20%, clica Stop, confere valor maior que zero e menor que 25%, avança mais vinte intervalos e confirma que permaneceu parado |
+| TC-PB-002 | Retomar, concluir e resetar | Prepara sua própria pausa em 20%, comprova a parada, retoma até 100%, aciona Reset e verifica 0%, Start disponível, Reset ausente e manutenção do zero |
+
+Cada `it()` usa `beforeEach()` para acessar a página inicial e navegar por
+Widgets → Progress Bar. A página começa em 0% para cada cenário. O helper local
+`startAndPause()` prepara a pausa separadamente em cada teste; nenhum estado
+é compartilhado entre os dois. `ProgressBarPage` centraliza seletores e ações;
+as asserções ficam na spec. `DemoQaPage` ganhou somente a navegação necessária.
+
+### Compatibilidade com o relógio e funcionamento real
+
+O código público do DemoQA consultado usa `setInterval` com 100 ms e incrementa
+o estado do componente em um ponto percentual a cada callback. O teste instala
+`cy.clock()` depois da navegação e controla somente `setInterval` e `clearInterval`.
+Date, timeouts e os demais mecanismos continuam com o comportamento normal.
+
+O helper `advanceProgress()` usa `cy.tick(100)` e aguarda a atualização de
+`aria-valuenow` a cada ponto. Essa sincronização permite que o React renderize
+o estado antes do próximo callback, evitando concentrar vários incrementos
+em um único avanço de relógio. O teste não escreve o valor da barra no DOM ou
+no estado React: as alterações são produzidas pelos callbacks reais da aplicação.
+
+Após alcançar 100%, um callback adicional de 100 ms permite a limpeza do intervalo
+que o componente realiza quando seu contador interno ultrapassa 100, mantendo
+100% visíveis. O teste então aciona Reset e confirma que o zero permanece após
+mais vinte intervalos. Os avanços de tempo representam o timer observado e a
+janela de verificação da parada; não são esperas fixas reais com `cy.wait()`.
+
+O relógio é restaurado pelo Cypress entre os testes. Não houve alteração global
+de configuração, dependências novas, mocks, cliques forçados ou exceções ignoradas.
+Se a aplicação mudar o timer, a implementação deve ser reavaliada. A cobertura
+verifica as transições de estado e o valor exibido; duração real e fluidez da
+animação não são objetivos destes testes com relógio controlado.
+
+Os comandos `npm run test:frontend` e `npm test` incluem os dois cenários novos.
+`test:frontend:demoqa` continua selecionando especificamente os dois cenários
+da Etapa 3. Browser Windows, Sortable e Cucumber seguem fora desta implementação.
+
+### Validação da Etapa 4.1
+
+- TC-PB-001 isolado: 1 teste aprovado no Chrome.
+- TC-PB-002 isolado: 1 teste aprovado no Chrome, com sua própria pré-condição.
+- Dois cenários juntos: 2 aprovados; repetição consecutiva: 2 aprovados novamente.
+- `npm test`: 10 testes aprovados em 6 specs, incluindo os oito anteriores;
+  zero falhas, pendências ou ignorados; código de saída 0.
+
+A seleção individual usou `it.only()` temporário, com restauração da spec e
+conferência de hash após cada execução. A versão final contém os dois `it()`
+normais e nenhuma seleção ou exclusão. Configuração, dependências e os testes
+aprovados das etapas anteriores foram preservados.
 
 Não salve credenciais no código, em fixtures ou em argumentos de linha de comando.
 Forneça segredos por variáveis de ambiente na execução. `.env` não é carregado

@@ -14,6 +14,7 @@
     "test:bookstore": "cypress run --browser chrome --spec \"cypress/e2e/api/bookstore.cy.js\"",
     "test:frontend": "cypress run --browser chrome --spec \"cypress/e2e/frontend/**/*.cy.js\"",
     "test:frontend:demoqa": "cypress run --browser chrome --spec \"cypress/e2e/frontend/practice-form.cy.js,cypress/e2e/frontend/web-tables.cy.js\"",
+    "test:progress-bar": "cypress run --browser chrome --spec \"cypress/e2e/frontend/progress-bar.cy.js\"",
     "cy:open": "cypress open --e2e",
     "cy:verify": "cypress verify",
     "cy:info": "cypress info"
