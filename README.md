@@ -5,6 +5,22 @@ Etapa 1: estrutura e validação do ambiente com uma aplicação local de demons
 Etapa 2: fluxo completo da API Book Store do DemoQA, explicado abaixo.
 Etapa 3: Practice Form e Web Tables no Frontend real do DemoQA.
 
+## Diretriz permanente de arquitetura
+
+Os novos cenários devem priorizar blocos `it()` pequenos e independentes, com
+títulos descritivos e IDs como `[TC-001]`. Usar `beforeEach()` e helpers para
+pré-condições quando apropriado; cada teste deve poder executar individualmente,
+sempre que possível, sem depender do estado deixado por outro teste.
+
+Page Objects concentram seletores e interações; as specs mantêm as asserções
+principais. Ações da mesma validação e fluxos integrados exigidos pelo desafio
+devem permanecer juntos, sem fragmentação artificial.
+
+O padrão completo está em [AGENTS.md](AGENTS.md). Os testes aprovados serão
+preservados até concluir Browser Windows, Progress Bar e Sortable. Na revisão
+final, a divisão de Book Store e Web Tables será avaliada com preservação da
+cobertura, execução individual dos cenários afetados e regressão completa.
+
 ## Requisitos
 
 - Node.js 24.x (versão de referência em `.nvmrc`).
