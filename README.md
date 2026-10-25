@@ -1,6 +1,6 @@
 # Desafio QA Accenture
 
-Automação independente de API e Frontend do [DemoQA](https://demoqa.com/), em JavaScript, Cypress e Page Object Model. São **9 testes obrigatórios em 6 funcionalidades**, além de **5 Smoke locais**. O bônus Cucumber permanece **não concluído** devido ao comportamento de exclusão de múltiplos registros do site. Não integra a suíte estável. Veja [o diagnóstico](docs/bonus-cucumber-bloqueado.md).
+Automação independente de API e Frontend do [DemoQA](https://demoqa.com/), em JavaScript, Cypress e Page Object Model. São **9 testes obrigatórios em 6 funcionalidades**, além de **5 Smoke locais**. O bônus tem **dois cenários Cucumber independentes**: cadastro de 12 registros validado e exclusão individual bloqueada por defeito do DemoQA, identificada com `@known-bug`. Os cenários BDD não são incluídos no comando padrão. Veja [o diagnóstico](docs/bonus-cucumber-bloqueado.md).
 
 ## Instalação
 
@@ -41,6 +41,9 @@ Os comandos de teste usam Chrome headless.
 | `npm run test:progress-bar` | Progress Bar | 2 |
 | `npm run test:sortable` | Sortable | 1 |
 | `npm run test:browser-windows` | Janela real | 1 |
+| `npm run test:bonus:validos` | Somente BDD sem `@known-bug`: cadastro dinâmico | 1 |
+| `npm run test:bonus:known-bug` | Reproduz a exclusão individual; falha pelo defeito do DemoQA | 1 bloqueado |
+| `npm run test:bonus` | Todos os BDD; inclui a falha conhecida de exclusão | 2 (1 bloqueado) |
 | `npm run test:api` | Book Store e Smoke API | 4 |
 | `npm run test:frontend` | Frontend do desafio e Smoke UI | 10 |
 | `npm run cy:open` | Runner interativo; ver restrição abaixo | — |
@@ -54,7 +57,7 @@ npm test -- --spec cypress/e2e/frontend/web-tables.cy.js --expose grep=TC-WT-002
 npm test -- --spec cypress/e2e/frontend/progress-bar.cy.js --expose grep=TC-PB-001,grepOmitFiltered=true
 ```
 
-Não há filtros ativos por padrão, `only`, `skip`, retries de teste, pausas fixas com `cy.wait`, cliques forçados ou exceções ignoradas.
+Não há `only`, `skip`, retries de teste, pausas fixas com `cy.wait`, cliques forçados ou exceções ignoradas. Os comandos BDD de válidos/known-bug usam filtros de tags explícitos; `test:bonus` executa ambos sem filtro.
 
 O servidor Smoke inicia automaticamente em `127.0.0.1`, numa porta livre, e encerra após a execução. `test:smoke` usa também a URL local na verificação inicial do Cypress, sem depender da disponibilidade do DemoQA. Na suíte completa, os Smoke continuam usando URLs locais absolutas.
 
@@ -73,16 +76,44 @@ URLs opcionais: `--config baseUrl=https://demoqa.com` para o Frontend e `--expos
 | TC-PB-002 | Retomar e resetar | Pausa própria, retomada a 100%, Reset, 0%, Start disponível, Reset ausente e manutenção do zero |
 | TC-SO-001 | Sortable | Arraste de One após Two, mudança real, novo arraste e ordem One a Six; eventos nativos confiáveis |
 | TC-BW-001 | Browser Windows | New Window real, IDs distintos de página/janela, leitura da mensagem, fechamento e preservação da original |
+| TC-BDD-001 | Bônus Cucumber — cadastro validado | Cria 12 registros exclusivos, compara os seis campos individualmente, confirma visibilidade de todos e total de linhas |
+| TC-BDD-002 | Bônus Cucumber — exclusão bloqueada, `@known-bug` | Prepara seus próprios 12 registros; exige que cada Delete remova só uma linha e preserve os demais; falha na exclusão indevida do site |
 | INF-API-001 a 003 | Smoke API local | Saúde JSON, criação fictícia e rota inexistente 404 |
 | INF-UI-001 a 002 | Smoke UI local | Página, comunicação com API, seleção e leitura do TXT |
 
-Os cinco casos INF validam infraestrutura; não contam como requisitos Accenture. TC-BDD-001, investigado para o bônus, não está aprovado nem incluído nessa contagem.
+Os cinco casos INF validam infraestrutura; não contam como requisitos Accenture. Há um bônus aprovado (TC-BDD-001) e um bloqueado (TC-BDD-002). A exclusão bloqueada não entra na contagem de aprovados. A suíte padrão continua com 14 casos; o perfil BDD não bloqueado adiciona um caso aprovado, executado separadamente.
+
+### Bônus Cucumber
+
+```sh
+npm run test:bonus:validos
+npm run test:bonus:known-bug
+```
+
+Os comandos selecionam a mesma feature em português. `test:bonus:validos` usa a expressão `not @known-bug`; `test:bonus:known-bug` usa `@known-bug`. No Cypress 16, essas opções passam por `--expose`, com `omitFiltered=true` para não apresentar o caso fora do perfil como pendente ou aprovado. `npm run test:bonus` não filtra tags: executa os dois e termina com falha enquanto o defeito persistir. A tag não transforma uma falha em sucesso nem ignora as asserções.
+
+Cada cenário navega novamente à Web Tables e gera seus próprios 12 registros. Ambos reutilizam exatamente os mesmos steps de navegação, cadastro e comparação. TC-BDD-001 termina após validar cadastro; TC-BDD-002 prepara o cadastro novamente e tenta as exclusões. Aliases estáticos pertencem à execução atual, com isolamento habilitado. Nenhum cenário depende do outro.
+
+`cypress.bdd.config.js` reutiliza o `setupNodeEvents` base, incluindo Puppeteer, URLs e servidor Smoke. `cypress-on-fix` compõe os handlers para que o encerramento do servidor e os relatórios Cucumber não sobrescrevam um ao outro. As specs `.cy.js` e seus scripts permanecem disponíveis.
+
+Para executar a suíte tradicional sob os plugins BDD, sem selecionar o bônus:
+
+```sh
+npm test -- --config-file cypress.bdd.config.js --spec "cypress/e2e/**/*.cy.js"
+```
+
+Versões fixadas: `@badeball/cypress-cucumber-preprocessor` 28.0.1, `@bahmutov/cypress-esbuild-preprocessor` 2.2.8, `esbuild` 0.28.2 e `cypress-on-fix` 1.1.0. O preprocessor declara suporte ao Cypress 16 e ao Node 24 usado neste projeto. A configuração segue os [exemplos oficiais](https://github.com/badeball/cypress-cucumber-preprocessor/blob/master/examples/esbuild-cjs/cypress.config.js) e a [orientação de composição de eventos](https://github.com/badeball/cypress-cucumber-preprocessor/blob/master/docs/event-handlers.md).
+
+Cada cenário mantém o mesmo documento durante seu próprio ciclo, seleciona 50 linhas e confirma página única/busca vazia. Gera e salva os 12 registros em `cypress/reports/bonus/<ID>/registros.json`, compara os seis campos de cada um e captura tabela/contagem após cadastro. TC-BDD-002 também captura o estado após cada Delete e exige que os registros restantes continuem presentes antes de preparar a próxima exclusão. Não recarrega a página nem altera React/DOM para contornar o defeito.
+
+Snapshots JSON ficam em pastas por ID dentro de `cypress/reports/bonus/`, relatório Gherkin em `cypress/reports/bonus-cucumber.json` e screenshots identificados por cenário em `cypress/screenshots/`. São evidências locais ignoradas pelo Git. Uma falha na primeira exclusão interrompe TC-BDD-002: as outras 11 exclusões e a ausência final não foram concluídas. O cadastro aprovado não significa aprovação da exclusão. O commit do bônus registra explicitamente essa cobertura parcial e preserva `503a576` no histórico.
 
 ## Arquitetura e decisões
 
 ```text
 cypress/
   e2e/api/          bookstore.cy.js, smoke.cy.js
+  e2e/bdd/          web-tables.feature, web-tables.js (Step Definitions)
   e2e/frontend/    practice-form, web-tables, progress-bar,
                    sortable, browser-windows, smoke (.cy.js)
   pages/           DemoQaPage, PracticeFormPage, WebTablesPage,
@@ -95,6 +126,7 @@ scripts/
   smoke-app/index.html    Aplicação mínima de diagnóstico
 docs/bonus-cucumber-bloqueado.md
 cypress.config.js
+cypress.bdd.config.js / .cypress-cucumber-preprocessorrc.json
 package.json / package-lock.json
 AGENTS.md
 ```
@@ -134,7 +166,7 @@ Login curto combina timestamp e parte de UUID; a senha usa outro UUID com prefix
 
 ## Validação e entrega
 
-A conclusão inclui instalação limpa, auditoria, seis specs isoladas, os nove casos do desafio juntos, os 14 casos completos e repetição dos nove obrigatórios. Web Tables também foi executado por ID após sua divisão. Progress Bar preserva os dois casos independentes já validados. Contagens, durações, falhas investigadas e evidências constam do relatório de entrega. O bônus bloqueado não é apresentado como aprovado.
+A validação anterior inclui instalação limpa, auditoria e seis specs isoladas. Após a divisão BDD, foram executados os dois cenários isoladamente, a execução conjunta dos dois, os nove obrigatórios e a regressão padrão com 14 casos. O cadastro BDD aprovado e a exclusão bloqueada são reportados separadamente. Web Tables também foi executado por ID após sua divisão; Progress Bar preserva os casos independentes. Contagens, durações, falhas e evidências constam do relatório de entrega.
 
 Screenshots são produzidos após verificações e em falhas. Ficam em `cypress/screenshots`, ignorados pelo Git e regenerados nas próximas execuções. O repositório exclui dependências, caches, relatórios, vídeos, configurações IntelliJ, `.env*` e `cypress.env.json`. `.env` não é carregado automaticamente. Não salvar credenciais ou tokens em código, fixtures ou argumentos.
 
@@ -148,3 +180,4 @@ Repositório local preparado para revisão. **GitHub não publicado:** criar rem
 - [clock](https://docs.cypress.io/api/commands/clock)
 - [Integração oficial Puppeteer](https://github.com/cypress-io/cypress/tree/develop/npm/puppeteer)
 - [Filtro oficial](https://github.com/cypress-io/cypress/tree/develop/npm/grep)
+- [Cucumber: instalação e Esbuild](https://github.com/badeball/cypress-cucumber-preprocessor/blob/master/docs/quick-start.md)

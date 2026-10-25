@@ -1,0 +1,4 @@
+{
+  "stepDefinitions": ["cypress/e2e/bdd/**/*.js"],
+  "json": { "enabled": true, "output": "cypress/reports/bonus-cucumber.json" }
+}

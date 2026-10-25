@@ -1,28 +1,79 @@
-# Bônus Cucumber — não concluído
+# Bônus Cucumber — cadastro validado e exclusão bloqueada
 
-Investigação em 25/10/2026, após a regressão obrigatória aprovada.
+O cenário integrado anterior foi dividido em dois cenários independentes, conforme a auditoria e a orientação do usuário. TC-BDD-001 valida o cadastro dinâmico de 12 registros e está aprovado. TC-BDD-002 prepara seus próprios 12 registros e reproduz a exclusão indevida do DemoQA; está marcado com `@known-bug` e não conta como aprovado. A referência 503a576 permanece no histórico.
 
-Foi testada uma configuração separada com Cucumber 28.0.1, preprocessor esbuild 2.2.8 e esbuild 0.28.2. A feature TC-BDD-001 reutilizou Page Objects e geradores para cadastrar 12 registros únicos, comparar os seis campos de cada um, excluir todos e verificar ausência.
+## Cenários e comandos
 
-## Resultado observado
+| Cenário | Comando | Resultado esperado na versão atual do site |
+| --- | --- | --- |
+| TC-BDD-001 — cadastro | `npm run test:bonus:validos` | Um cenário aprovado: 12 registros exclusivos, seis campos comparados por registro, todos visíveis e contabilizados |
+| TC-BDD-002 — exclusão individual | `npm run test:bonus:known-bug` | Um cenário reprovado na primeira exclusão, com evidências e código de saída 1 |
+| Ambos | `npm run test:bonus` | Um aprovado e um reprovado; resultado global de falha |
 
-1. Abrir Home → Elements → Web Tables e selecionar 20 linhas por página.
-2. Capturar a quantidade inicial: 3 registros.
-3. Cadastrar 12 registros distintos pela interface, com e-mails UUID.
-4. Comparar os seis campos dos 12 registros e confirmar 15 linhas: passou.
-5. Clicar Delete no primeiro registro criado: os 12 registros adicionados desaparecem, restando os 3 iniciais.
-6. Tentar excluir o segundo registro: Cypress falha porque a linha não existe. As outras exclusões e a verificação final não foram aprovadas.
+Os perfis usam expressões de tags explícitas (`not @known-bug` / `@known-bug`) e `omitFiltered=true` via `--expose`, conforme a interface do preprocessor instalado para Cypress 16. O cenário fora de um perfil não é contado como aprovado. O comando conjunto mantém ambos ativos e preserva a falha real; não há skip ou captura da exceção para obter sucesso.
 
-O bundle público consultado em [index-D_rDx8ml.js](https://demoqa.com/assets/index-D_rDx8ml.js) define o callback de exclusão a partir do estado da tabela e memoriza as colunas com dependências vazias. A leitura indica captura da lista inicial pelo callback do botão. O comportamento observado é compatível com essa referência antiga: excluir um registro adicionado restaura a lista inicial. O nome do bundle pode mudar quando o site for publicado novamente.
+Cada cenário executa sua própria navegação, captura da tabela inicial, geração de 12 e-mails únicos e cadastro pela interface. Os mesmos steps são reutilizados, sem duplicar métodos de cadastro. As aliases são estáticas e o isolamento entre testes está habilitado. TC-BDD-001 termina após verificar os cadastros; TC-BDD-002 executa seu preparo sem depender de TC-BDD-001.
 
-## Falha do teste corrigida na investigação
+JSON e massa ficam em `cypress/reports/bonus/TC-BDD-001/` e `cypress/reports/bonus/TC-BDD-002/`. Screenshots usam o ID do cenário. Essa separação evita que as evidências de um caso sobrescrevam as do outro na execução conjunta.
 
-A primeira tentativa também encontrou uma falha da automação: o alias da quantidade inicial era uma consulta reexecutável. Após os cadastros, retornava 15 em vez de 3. A captura foi alterada para `type: 'static'`. A execução seguinte passou pela inclusão e todas as comparações, e revelou o defeito de exclusão descrito acima. As duas falhas foram registradas separadamente.
+## Auditoria antes das alterações
 
-## Decisão de entrega
+Foram revisados package.json/lockfile, cypress.config.js, WebTablesPage, CRUD aprovado, configurações e steps da tentativa anterior, logs, screenshots e resultados por etapa. A versão estável não tinha Cucumber instalado nem feature ativa. A tentativa antiga havia sido retirada e preservada nas evidências.
 
-Não aceitar desaparecimento coletivo como sucesso de 12 exclusões individuais, nem modificar estado React, DOM ou callbacks do site para obter aprovação. O bônus fica **não concluído**, sem contar como cobertura aprovada.
+O alias da quantidade inicial tinha sido corrigido para snapshot estático na tentativa anterior. Não foi a causa da exclusão coletiva. O seletor do CRUD aprovado já limitava Delete à linha do e-mail.
 
-Conforme a orientação de preservar a versão estável, configuração experimental, feature, steps e dependências exclusivas Cucumber não integram o código final. A tentativa e as evidências ficam no material de diagnóstico da entrega. A suíte principal continua com 9 casos obrigatórios e 5 Smoke.
+## Reprodução fora do Cypress
 
-Retomar exige corrigir/reavaliar o site e executar o bônus inteiro, sua repetição e a regressão principal. Não há `test:bonus` no projeto estável; nenhum caso foi marcado como ignorado para ocultar a falha.
+Na interface de um navegador, sem Cypress ou Cucumber:
+
+1. Abrir Web Tables e cadastrar dois registros com e-mails diferentes.
+2. Conferir cinco linhas, busca vazia e página 1 de 1.
+3. Acionar somente Delete do primeiro registro (ação ID 4).
+4. Os dois registros adicionados desaparecem; restam os três originais.
+5. Buscar o segundo e-mail não retorna registro. Limpar a busca mostra os três originais.
+
+Isso descarta dependência exclusiva de hooks/steps Cucumber e demonstra o defeito pela interface. Os e-mails são dados fictícios criados só para a reprodução.
+
+## Causa técnica
+
+O bundle público atual [index-D_rDx8ml.js](https://demoqa.com/assets/index-D_rDx8ml.js) cria as colunas com `useMemo` e dependências vazias. A ação Delete captura a versão inicial do callback que filtra a lista. Essa versão usa os três registros iniciais. Excluir um ID adicionado (4, por exemplo) filtra a lista antiga e substitui o estado atual pelos três originais.
+
+Portanto, os registros adicionados são removidos da lista em memória; não estão apenas escondidos. Não há persistência de servidor comprovada nesse cenário.
+
+A correção de origem deve usar a lista atual, por exemplo com atualização funcional no código do site:
+
+```js
+setRows(current => current.filter(item => item.id !== selected.id));
+```
+
+Esse exemplo é uma recomendação para o mantenedor. O projeto de testes não contém a fonte do DemoQA nem tem acesso para corrigir/publicar o site. A automação não aplica esse patch, não modifica estado React e não simula exclusões.
+
+## Evidências instrumentadas de TC-BDD-002
+
+- Os 12 registros únicos foram cadastrados e seus seis campos comparados: 15 linhas antes do Delete.
+- Primeiro clique: somente um botão, `delete-record-4`, dentro da linha do e-mail esperado.
+- Após o clique: três linhas; a asserção exige 14 e falha.
+- Mesmo documento, mesma janela, mesmo elemento da tabela e mesmo `performance.timeOrigin` antes/depois.
+- Busca vazia, capacidade 50, página 1 de 1 e Next desabilitado.
+- Nenhum `visit`/`reload` após a preparação inicial; os steps seguintes reutilizam aliases estáticos.
+- O cenário captura JSON e screenshot antes da asserção de sobrevivência e interrompe as outras exclusões se houver perda indevida.
+
+Essas observações descartam recarregamento/nova navegação, paginação, busca e seletor atingindo várias linhas. São coerentes com a substituição da lista pelo estado antigo identificada no bundle. Não foi necessário acessar internamente o React para validar isso.
+
+## Integração e preservação
+
+- Cucumber 28.0.1: compatível com Cypress 16.2.0 e Node 24.22.1 conforme engines/peers declarados.
+- Esbuild 0.28.2 e preprocessor 2.2.8; configuração conforme documentação oficial.
+- cypress-on-fix 1.1.0: composição de eventos recomendada pelo Cucumber para preservar handlers simultâneos.
+- Configuração BDD reaproveita setupNodeEvents base, Puppeteer/Browser Windows, URLs e encerramento do Smoke. Não substitui a configuração padrão.
+- Feature e Step Definitions exclusivos; Page Object ganha apenas getters, paginação e leitura para diagnóstico. CRUD obrigatório não foi alterado.
+- Scripts dos seis módulos preservados. test:bonus executa os dois cenários; os perfis test:bonus:validos e test:bonus:known-bug selecionam explicitamente os cenários não bloqueados e a reprodução do defeito. A configuração BDD aceita também as specs tradicionais.
+- A divisão não alterou o Page Object, a configuração dos plugins, as dependências ou o lockfile existentes no início desta etapa. O commit do bônus também incorpora os arquivos da integração anterior, que já estavam presentes e ainda não tinham commit.
+
+Referências: [Esbuild oficial](https://github.com/badeball/cypress-cucumber-preprocessor/blob/master/examples/esbuild-cjs/cypress.config.js), [eventos](https://github.com/badeball/cypress-cucumber-preprocessor/blob/master/docs/event-handlers.md).
+
+## Situação da entrega
+
+Há um cenário de cadastro BDD aprovado e um cenário de exclusão bloqueado. TC-BDD-002 executa um clique e detecta a remoção dos outros 11 registros que deveriam permanecer. A asserção exige 14 linhas no total e encontra três. As outras 11 exclusões individuais e a validação final de ausência não são concluídas. Não há 12 exclusões individuais aprovadas.
+
+O commit específico do bônus registra cadastro validado e exclusão bloqueada, conforme autorização do usuário para essa entrega parcial. A validação inclui execução isolada de cada cenário, execução conjunta, os nove obrigatórios e a regressão padrão com cinco Smoke. O cenário de exclusão deverá ser reexecutado após correção do DemoQA; somente então poderá ser contado como aprovado. Resultados e evidências completos acompanham o relatório da divisão dos cenários.

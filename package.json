@@ -18,14 +18,21 @@
     "test:progress-bar": "cypress run --browser chrome --spec \"cypress/e2e/frontend/progress-bar.cy.js\"",
     "test:sortable": "cypress run --browser chrome --spec \"cypress/e2e/frontend/sortable.cy.js\"",
     "test:browser-windows": "cypress run --browser chrome --spec \"cypress/e2e/frontend/browser-windows.cy.js\"",
+    "test:bonus": "cypress run --browser chrome --config-file cypress.bdd.config.js --spec \"cypress/e2e/bdd/**/*.feature\"",
+    "test:bonus:validos": "cypress run --browser chrome --config-file cypress.bdd.config.js --spec \"cypress/e2e/bdd/**/*.feature\" --expose \"tags=not @known-bug,omitFiltered=true\"",
+    "test:bonus:known-bug": "cypress run --browser chrome --config-file cypress.bdd.config.js --spec \"cypress/e2e/bdd/**/*.feature\" --expose \"tags=@known-bug,omitFiltered=true\"",
     "cy:open": "cypress open --e2e",
     "cy:verify": "cypress verify",
     "cy:info": "cypress info"
   },
   "devDependencies": {
+    "@badeball/cypress-cucumber-preprocessor": "28.0.1",
+    "@bahmutov/cypress-esbuild-preprocessor": "2.2.8",
     "@cypress/grep": "7.0.0",
     "@cypress/puppeteer": "0.1.10",
     "cypress": "16.2.0",
+    "cypress-on-fix": "1.1.0",
+    "esbuild": "0.28.2",
     "puppeteer-core": "25.16.0"
   },
   "overrides": {
@@ -34,6 +41,7 @@
     }
   },
   "allowScripts": {
-    "cypress@16.2.0": true
+    "cypress@16.2.0": true,
+    "esbuild@0.28.2": true
   }
 }
