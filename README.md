@@ -13,7 +13,7 @@ São nove testes obrigatórios em seis funcionalidades e cinco Smoke locais. O b
 - `@cypress/puppeteer` 0.1.10 e `puppeteer-core` 25.16.0 para janela real e arraste nativo.
 - Cucumber preprocessor 28.0.1, Esbuild 0.28.2, esbuild preprocessor 2.2.8 e `cypress-on-fix` 1.1.0.
 - `@cypress/grep` 7.0.0 para selecionar casos pelo ID.
-- Chrome headless nos comandos de teste e Chrome for Testing no Runner interativo.
+- Chrome headless nos comandos de teste. O Runner permite a seleção padrão de navegadores ou a abertura específica com Chrome for Testing.
 
 As versões estão fixadas no `package-lock.json`. O override de `puppeteer-core` mantém o plugin na mesma versão usada pelo projeto, substituindo sua árvore antiga de dependências. Essa combinação foi validada; atualizações precisam de nova regressão.
 
@@ -31,11 +31,14 @@ cypress/
 scripts/
   browser-actions.cjs      Ações Puppeteer para janela e arraste
   chrome-for-testing.cjs   Localização do navegador para o Runner
+  setup-common-events.cjs  URLs e ciclo do servidor Smoke compartilhados
   smoke-server.js          Servidor local em porta livre
   smoke-app/index.html     Página usada pelos Smoke
 docs/bonus-cucumber-bloqueado.md
 cypress.config.js
+cypress.open.config.js
 cypress.bdd.config.js
+cypress.testing.config.js
 ```
 
 Cada teste prepara seus próprios dados, com isolamento habilitado. Web Tables tem casos separados para cadastro, edição e exclusão. Book Store mantém as seis etapas no mesmo `it()`, como exige o fluxo integrado do desafio. ID do usuário, token e ISBNs ficam apenas nessa execução. As [diretrizes de organização](AGENTS.md) orientam os novos cenários.
@@ -53,11 +56,13 @@ npm run cy:verify
 
 Se o binário do Cypress não tiver sido baixado, execute `npx cypress install`. No PowerShell, use `npm.cmd` se a execução de `npm.ps1` estiver bloqueada, sem alterar a política da máquina.
 
-Para o modo interativo, instale também o Chrome for Testing correspondente ao Puppeteer. O comando abaixo funciona no PowerShell e no Bash e instala o navegador fora do projeto, no cache do usuário:
+Para abrir com Chrome convencional ou outro navegador detectado, execute `npm run cy:open`. Esse modo não registra o plugin Puppeteer e não exige Chrome for Testing. Browser Windows e Sortable ficam fora dessa lista porque dependem de Puppeteer.
+
+Para usar a opção portátil compatível com Puppeteer no modo interativo, instale o Chrome for Testing correspondente. O comando abaixo funciona no PowerShell e no Bash e instala o navegador fora do projeto, no cache do usuário:
 
 ```sh
 npx @puppeteer/browsers@3.2.6 install chrome@156.0.8078.47 --path "$HOME/.cache/puppeteer"
-npm run cy:open
+npm run cy:open:testing
 ```
 
 O instalador baixa a distribuição oficial do Google. O navegador não faz parte do repositório nem é baixado por `npm ci`. Se precisar de outro diretório, use o mesmo `--path` na instalação e defina `CYPRESS_CFT_CACHE` com esse diretório antes de abrir o Cypress. Preserve a estrutura criada pelo instalador.
@@ -81,10 +86,17 @@ Os comandos `test:*` usam o Chrome instalado em modo headless:
 | `npm run test:browser-windows` | Abertura e fechamento de janela real | 1 |
 | `npm run test:api` | Book Store e Smoke API | 4 |
 | `npm run test:frontend` | Obrigatórios de Frontend e Smoke UI | 10 |
-| `npm run cy:open` | Runner com Chrome for Testing e cadastro BDD | 15 disponíveis em 9 specs |
+| `npm run cy:open` | Runner padrão, sem Puppeteer, Browser Windows e Sortable | 12 disponíveis em 6 specs |
+| `npm run cy:open:testing` | Runner com Chrome for Testing e cadastro BDD | 15 disponíveis em 9 specs |
 | `npm run cy:verify` / `npm run cy:info` | Diagnóstico do ambiente | — |
 
-Em `cy:open`, selecione **Chrome for Testing**, clique em **Start E2E Testing** e escolha a spec. A configuração oferece somente esse navegador; se ele estiver ausente, informa o caminho esperado e o comando de instalação. Não há alternativa automática para Electron. O Runner inclui a feature BDD e aplica `not @known-bug`, como `test:all`.
+**Para executar visualmente todos os módulos obrigatórios, use `npm run cy:open:testing`.** Esse é o modo recomendado para a avaliação completa do desafio.
+
+Em `cy:open`, escolha Chrome, Edge, Firefox, Electron ou outro navegador detectado, clique em **Start E2E Testing** e selecione a spec. Não há navegador forçado. A configuração `cypress.open.config.js` mantém as URLs, o isolamento, as fixtures, os comandos e o servidor Smoke, sem registrar os hooks e as tarefas do plugin Puppeteer. Practice Form, Web Tables, Progress Bar, Book Store e os Smoke continuam disponíveis. A feature BDD fica no modo completo.
+
+Em `cy:open:testing`, selecione **Chrome for Testing** e siga os mesmos passos. A configuração `cypress.testing.config.js` reutiliza a configuração BDD, registra Puppeteer normalmente e usa o inicializador portátil. Oferece somente esse navegador; se ele estiver ausente, informa o caminho esperado e o comando de instalação. Esse é o modo completo: os seis módulos obrigatórios, incluindo Browser Windows com janela real e Sortable com arraste nativo, os Smoke e o cadastro BDD. Aplica `not @known-bug`, como `test:all`.
+
+Os comandos headless continuam usando `cypress.config.js` ou `cypress.bdd.config.js`, com Puppeteer habilitado e sem as exclusões do modo visual padrão. `npm test` mantém os 14 casos e `test:all` mantém os 15. O código dos testes e dos Page Objects é o mesmo em todos os modos.
 
 Para executar uma spec ou um teste individual:
 
@@ -153,7 +165,7 @@ Execute o Runner e a regressão em momentos separados: ambos usam essas pastas d
 - **Exclusão BDD:** após cadastrar 12 registros, a tabela tem 15 linhas. Na reprodução registrada, o primeiro Delete deixa apenas as três linhas originais, embora a asserção exija 14. Os outros 11 registros também desaparecem. O cenário salva evidências antes de falhar; as outras 11 exclusões e a verificação final não são concluídas. Não há 12 exclusões individuais aprovadas. O [diagnóstico completo](docs/bonus-cucumber-bloqueado.md) inclui reprodução manual e hipótese técnica, sem apresentar a causa interna como comprovada. Não há alteração do estado React nem exclusão simulada.
 - **Practice Form:** o TXT é conferido na seleção e no modal, sem validar persistência em backend. O botão Close apresentou `findDOMNode is not a function`; o teste usa Escape e confirma o fechamento. O botão não foi tratado como corrigido nem revalidado nesta revisão.
 - **Progress Bar:** `cy.clock` controla apenas `setInterval`/`clearInterval`. Cada `cy.tick(100)` executa o callback real e espera o valor renderizado; um callback adicional permite limpar o intervalo em 100%. O teste não mede fluidez ou duração real. Se o timer do site mudar, esse controle precisa ser revisto.
-- **Navegador:** o plugin Puppeteer é experimental. Chrome convencional >=137 tem uma restrição de extensão no modo visual; Chrome for Testing é usado para essa execução. Os comandos headless continuam usando Chrome. Veja a [compatibilidade oficial do plugin](https://github.com/cypress-io/cypress/tree/develop/npm/puppeteer#compatibility).
+- **Navegador:** o plugin Puppeteer é experimental e bloqueia Chrome convencional >=137 no modo interativo devido à restrição de extensão. Por isso, `cy:open` não registra esse plugin e exclui Browser Windows e Sortable. Para executar esses cenários, use `cy:open:testing`, com Chrome for Testing e Puppeteer habilitado. O plugin exige navegadores Chromium; os comandos headless continuam usando Chrome com a integração completa. Veja a [compatibilidade oficial do plugin](https://github.com/cypress-io/cypress/tree/develop/npm/puppeteer#compatibility).
 - **DemoQA e rede:** indisponibilidade, falhas de autenticação e catálogo insuficiente reprovam os testes. Um login longo já retornou 500 na geração do token após cadastro 201; o teste usa um login curto e único. O limite exato do site não foi confirmado. As contas fictícias permanecem no DemoQA, pois removê-las não faz parte do fluxo solicitado.
 
 ## Observações necessárias para reprodução
