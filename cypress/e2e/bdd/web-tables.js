@@ -71,7 +71,6 @@ function deleteNext(remaining, deleted, initialEmails) {
     });
     webTablesPage.rowByEmail(record.email).should('not.exist');
     next.forEach(expectRecord);
-    // Só prepara a próxima exclusão depois de comprovar os sobreviventes.
     cy.then(() => deleteNext(next, removed, initialEmails));
   });
 }

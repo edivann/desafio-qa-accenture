@@ -49,7 +49,6 @@ describe('DemoQA | Progress Bar', () => {
   });
 
   it('TC-PB-002 - retoma o progresso, conclui em 100% e reseta ao estado inicial', () => {
-    // Pré-condição criada neste teste, sem reutilizar o estado do TC-PB-001.
     startAndPause().then((pausedAt) => {
       expect(pausedAt, 'pré-condição: progresso interrompido antes de 25%')
         .to.be.greaterThan(0).and.be.lessThan(25);

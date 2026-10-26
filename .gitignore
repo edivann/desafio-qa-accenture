@@ -4,6 +4,7 @@ cypress/videos/
 cypress/downloads/
 cypress/reports/
 .cache/
+chrome/
 coverage/
 .env
 .env.*

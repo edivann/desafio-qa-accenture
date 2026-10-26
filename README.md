@@ -1,57 +1,92 @@
 # Desafio QA Accenture
 
-Automação independente de API e Frontend do [DemoQA](https://demoqa.com/), em JavaScript, Cypress e Page Object Model. São **9 testes obrigatórios em 6 funcionalidades**, além de **5 Smoke locais**. O bônus tem **dois cenários Cucumber independentes**: cadastro de 12 registros validado e exclusão individual bloqueada por defeito do DemoQA, identificada com `@known-bug`. Os cenários BDD não são incluídos no comando padrão. Veja [o diagnóstico](docs/bonus-cucumber-bloqueado.md).
+## Sobre o projeto
 
-## Instalação
+Este projeto reúne os testes de API e Frontend do [DemoQA](https://demoqa.com/) para o desafio da Accenture. Usei Cypress e JavaScript, com as interações organizadas em Page Objects e as validações nas specs.
 
-Requisitos: Node.js 24.x (referência 24.22.1 em `.nvmrc`), npm >=10, Git e Google Chrome instalado. Internet é necessária para instalar pacotes/binário do Cypress e executar os testes do DemoQA. Ambiente validado: Windows, Chrome 156 headless e Cypress 16.2.0.
+São nove testes obrigatórios em seis funcionalidades e cinco Smoke locais. O bônus Cucumber tem um cenário de cadastro aprovado e outro de exclusão bloqueado por um defeito do DemoQA. A exclusão não entra na contagem de aprovados.
 
-Abra **esta pasta** no IntelliJ IDEA, abra seu terminal e execute:
+## Tecnologias utilizadas
+
+- Node.js 24.x e npm >=10. A versão de referência do Node está em `.nvmrc` (24.22.1).
+- Cypress 16.2.0 e JavaScript.
+- `@cypress/puppeteer` 0.1.10 e `puppeteer-core` 25.16.0 para janela real e arraste nativo.
+- Cucumber preprocessor 28.0.1, Esbuild 0.28.2, esbuild preprocessor 2.2.8 e `cypress-on-fix` 1.1.0.
+- `@cypress/grep` 7.0.0 para selecionar casos pelo ID.
+- Chrome headless nos comandos de teste e Chrome for Testing no Runner interativo.
+
+As versões estão fixadas no `package-lock.json`. O override de `puppeteer-core` mantém o plugin na mesma versão usada pelo projeto, substituindo sua árvore antiga de dependências. Essa combinação foi validada; atualizações precisam de nova regressão.
+
+## Organização do projeto
+
+```text
+cypress/
+  e2e/api/          Book Store e Smoke API
+  e2e/frontend/     Practice Form, Web Tables, Progress Bar,
+                    Sortable, Browser Windows e Smoke UI
+  e2e/bdd/          Feature e Step Definitions de Web Tables
+  pages/            Seletores e interações com as páginas
+  fixtures/         Opções, massa Smoke e uploads/arquivo-teste.txt
+  support/          Comandos, plugins e geradores de dados
+scripts/
+  browser-actions.cjs      Ações Puppeteer para janela e arraste
+  chrome-for-testing.cjs   Localização do navegador para o Runner
+  smoke-server.js          Servidor local em porta livre
+  smoke-app/index.html     Página usada pelos Smoke
+docs/bonus-cucumber-bloqueado.md
+cypress.config.js
+cypress.bdd.config.js
+```
+
+Cada teste prepara seus próprios dados, com isolamento habilitado. Web Tables tem casos separados para cadastro, edição e exclusão. Book Store mantém as seis etapas no mesmo `it()`, como exige o fluxo integrado do desafio. ID do usuário, token e ISBNs ficam apenas nessa execução. As [diretrizes de organização](AGENTS.md) orientam os novos cenários.
+
+## Como instalar
+
+Requisitos: Node.js 24.x, npm >=10, Git, Google Chrome e acesso à internet. Para clonar o [repositório privado](https://github.com/edivann/desafio-qa-accenture), é necessário ter acesso autorizado no GitHub. A autenticação do GitHub não é usada nos testes.
+
+Abra a pasta do projeto no IntelliJ IDEA e execute no terminal:
 
 ```sh
 npm ci
 npm run cy:verify
-npm run test:challenge
 ```
 
-O lockfile fixa a instalação. Se o binário não tiver sido baixado, execute `npx cypress install`. No PowerShell, se `npm.ps1` for bloqueado, use `npm.cmd`, sem alterar a política da máquina.
+Se o binário do Cypress não tiver sido baixado, execute `npx cypress install`. No PowerShell, use `npm.cmd` se a execução de `npm.ps1` estiver bloqueada, sem alterar a política da máquina.
 
-Se o terminal resolver um npm global antigo, use o que acompanha o Node:
+Para o modo interativo, instale também o Chrome for Testing correspondente ao Puppeteer. O comando abaixo funciona no PowerShell e no Bash e instala o navegador fora do projeto, no cache do usuário:
 
-```powershell
-$taskNpm = Join-Path (Split-Path (Get-Command node).Source) 'node_modules/npm/bin/npm-cli.js'
-node $taskNpm --version
-node $taskNpm ci
-node $taskNpm run test:challenge
+```sh
+npx @puppeteer/browsers@3.2.6 install chrome@156.0.8078.47 --path "$HOME/.cache/puppeteer"
+npm run cy:open
 ```
 
-Em redes com certificados corporativos confiáveis no Windows, um erro `UNABLE_TO_VERIFY_LEAF_SIGNATURE` pode ser resolvido com `$env:NODE_USE_SYSTEM_CA = '1'` antes dos comandos. Isso mantém a validação TLS. Não é preciso mudar o npm global ou desabilitar certificados.
+O instalador baixa a distribuição oficial do Google. O navegador não faz parte do repositório nem é baixado por `npm ci`. Se precisar de outro diretório, use o mesmo `--path` na instalação e defina `CYPRESS_CFT_CACHE` com esse diretório antes de abrir o Cypress. Preserve a estrutura criada pelo instalador.
 
-## Comandos
+O helper usa a versão indicada em `PUPPETEER_REVISIONS.chrome` do `puppeteer-core` instalado, sem caminhos pessoais no código. Estão previstos Windows x64, Linux x64 e macOS Intel/Apple Silicon. A validação foi feita em Windows x64 com Chrome for Testing 156.0.8078.47; os demais sistemas não foram executados nesta revisão. No Linux, as [dependências de sistema do Cypress](https://docs.cypress.io/app/get-started/install-cypress#Linux-Prerequisites) e do navegador também precisam estar instaladas.
 
-Os comandos de teste usam Chrome headless.
+## Como executar os testes
+
+Os comandos `test:*` usam o Chrome instalado em modo headless:
 
 | Comando | Escopo | Casos |
 | --- | --- | ---: |
-| `npm run test:challenge` | Somente os seis módulos Accenture | 9 |
-| `npm run test:smoke` | API e Frontend da aplicação local | 5 |
-| `npm test` | Desafio e Smoke | 14 |
-| `npm run test:all` | Desafio, Smoke e cadastro BDD; exclui `@known-bug` | 15 |
-| `npm run test:bookstore` | Fluxo integrado Book Store | 1 |
+| `npm run test:challenge` | Seis funcionalidades obrigatórias | 9 |
+| `npm run test:smoke` | API e Frontend locais | 5 |
+| `npm test` | Obrigatórios e Smoke | 14 |
+| `npm run test:all` | Obrigatórios, Smoke e cadastro BDD, sem `@known-bug` | 15 |
+| `npm run test:bookstore` | Fluxo integrado da API | 1 |
 | `npm run test:frontend:demoqa` | Practice Form e Web Tables | 4 |
-| `npm run test:progress-bar` | Progress Bar | 2 |
-| `npm run test:sortable` | Sortable | 1 |
-| `npm run test:browser-windows` | Janela real | 1 |
-| `npm run test:bonus` | Somente BDD sem `@known-bug`: cadastro dinâmico | 1 |
-| `npm run test:bonus:validos` | Perfil equivalente a `test:bonus`, mantido por compatibilidade | 1 |
-| `npm run test:bonus:known-bug` | Reproduz a exclusão individual; falha pelo defeito do DemoQA | 1 bloqueado |
-| `npm run test:bonus:all` | Todos os BDD; inclui a falha conhecida de exclusão | 2 (1 bloqueado) |
+| `npm run test:progress-bar` | Pausa, retomada e Reset | 2 |
+| `npm run test:sortable` | Arraste e ordenação | 1 |
+| `npm run test:browser-windows` | Abertura e fechamento de janela real | 1 |
 | `npm run test:api` | Book Store e Smoke API | 4 |
-| `npm run test:frontend` | Frontend do desafio e Smoke UI | 10 |
-| `npm run cy:open` | Runner interativo; ver restrição abaixo | — |
+| `npm run test:frontend` | Obrigatórios de Frontend e Smoke UI | 10 |
+| `npm run cy:open` | Runner com Chrome for Testing e cadastro BDD | 15 disponíveis em 9 specs |
 | `npm run cy:verify` / `npm run cy:info` | Diagnóstico do ambiente | — |
 
-Uma spec ou caso individual pode ser selecionado pelo filtro oficial `@cypress/grep`:
+Em `cy:open`, selecione **Chrome for Testing**, clique em **Start E2E Testing** e escolha a spec. A configuração oferece somente esse navegador; se ele estiver ausente, informa o caminho esperado e o comando de instalação. Não há alternativa automática para Electron. O Runner inclui a feature BDD e aplica `not @known-bug`, como `test:all`.
+
+Para executar uma spec ou um teste individual:
 
 ```sh
 npm test -- --spec cypress/e2e/frontend/practice-form.cy.js
@@ -59,91 +94,29 @@ npm test -- --spec cypress/e2e/frontend/web-tables.cy.js --expose grep=TC-WT-002
 npm test -- --spec cypress/e2e/frontend/progress-bar.cy.js --expose grep=TC-PB-001,grepOmitFiltered=true
 ```
 
-Não há `only`, `skip`, retries de teste, pausas fixas com `cy.wait`, cliques forçados ou exceções ignoradas. Os comandos BDD usam filtros de tags explícitos; `test:bonus:all` executa ambos sem filtro.
+## Cenários automatizados
 
-O servidor Smoke inicia automaticamente em `127.0.0.1`, numa porta livre, e encerra após a execução. `test:smoke` usa também a URL local na verificação inicial do Cypress, sem depender da disponibilidade do DemoQA. Na suíte completa, os Smoke continuam usando URLs locais absolutas.
-
-URLs opcionais: `--config baseUrl=https://demoqa.com` para o Frontend e `--expose apiUrl=https://demoqa.com` para API. Contratos e seletores permanecem específicos do DemoQA; trocar a URL não torna a suíte genérica.
-
-## Matriz de cobertura
-
-| ID | Funcionalidade | Ações e resultados verificados |
+| ID | Funcionalidade | Validações |
 | --- | --- | --- |
-| TC-API-001 | Book Store | Usuário único, token válido, autorização, catálogo, associação de dois ISBNs distintos e consulta da coleção do mesmo usuário |
-| TC-PF-001 | Practice Form | Navegação desde Home, dados válidos e dinâmicos, calendário, assuntos, hobbies, estado/cidade, TXT; comparação de dez valores do modal; fechamento por Escape e ausência |
-| TC-WT-001 | Cadastro | Criação de registro próprio e comparação das seis células |
-| TC-WT-002 | Edição | Cadastro como pré-condição, alteração dos seis campos, valores novos e ausência do e-mail anterior |
-| TC-WT-003 | Exclusão | Cadastro e edição próprios com validações intermediárias; exclusão e ausência sem filtro de busca |
-| TC-PB-001 | Interromper progresso | Início, pausa em 20%, valor positivo abaixo de 25% e estabilidade após mais intervalos |
-| TC-PB-002 | Retomar e resetar | Pausa própria, retomada a 100%, Reset, 0%, Start disponível, Reset ausente e manutenção do zero |
-| TC-SO-001 | Sortable | Arraste de One após Two, mudança real, novo arraste e ordem One a Six; eventos nativos confiáveis |
-| TC-BW-001 | Browser Windows | New Window real, IDs distintos de página/janela, leitura da mensagem, fechamento e preservação da original |
-| TC-BDD-001 | Bônus Cucumber — cadastro validado | Cria 12 registros exclusivos, compara os seis campos individualmente, confirma visibilidade de todos e total de linhas |
-| TC-BDD-002 | Bônus Cucumber — exclusão bloqueada, `@known-bug` | Prepara seus próprios 12 registros; exige que cada Delete remova só uma linha e preserve os demais; falha na exclusão indevida do site |
-| INF-API-001 a 003 | Smoke API local | Saúde JSON, criação fictícia e rota inexistente 404 |
-| INF-UI-001 a 002 | Smoke UI local | Página, comunicação com API, seleção e leitura do TXT |
+| TC-API-001 | Book Store | Usuário único, token válido, autorização, catálogo, dois ISBNs distintos e consulta da coleção do mesmo usuário |
+| TC-PF-001 | Practice Form | Navegação, dados dinâmicos, calendário, assuntos, hobbies, estado/cidade e TXT; dez valores do modal e fechamento por Escape |
+| TC-WT-001 | Web Tables — cadastro | Inclusão e comparação dos seis campos |
+| TC-WT-002 | Web Tables — edição | Massa própria, alteração dos seis campos e ausência do e-mail anterior |
+| TC-WT-003 | Web Tables — exclusão | Cadastro e edição próprios, validações intermediárias e ausência após Delete, sem busca |
+| TC-PB-001 | Progress Bar — pausa | Progresso positivo, parada em 20%, abaixo de 25%, e manutenção da pausa |
+| TC-PB-002 | Progress Bar — retomada | Pausa própria, conclusão em 100%, Reset, retorno e manutenção do zero |
+| TC-SO-001 | Sortable | Mudança e restauração da ordem de One a Six por arraste nativo, com eventos confiáveis |
+| TC-BW-001 | Browser Windows | Nova janela real, IDs distintos, mensagem, fechamento e preservação da original |
+| INF-API-001 a 003 | Smoke API | Saúde JSON, criação fictícia e rota inexistente 404 |
+| INF-UI-001 a 002 | Smoke UI | Página, comunicação com API e leitura do TXT selecionado |
+| TC-BDD-001 | Bônus — cadastro aprovado | 12 registros exclusivos, seis campos por registro, visibilidade de todos e contagem total |
+| TC-BDD-002 | Bônus — exclusão bloqueada | Massa própria; cada Delete deve remover só uma linha e preservar as demais; marcado com `@known-bug` |
 
-Os cinco casos INF validam infraestrutura; não contam como requisitos Accenture. Há um bônus aprovado (TC-BDD-001) e um bloqueado (TC-BDD-002). A exclusão bloqueada não entra na contagem de aprovados. A suíte padrão continua com 14 casos; `test:all` inclui o cadastro BDD e totaliza 15 casos, excluindo explicitamente o cenário bloqueado.
+Os cinco Smoke verificam a infraestrutura local e não contam como requisitos do desafio. O servidor inicia automaticamente em `127.0.0.1`, numa porta livre, e encerra após a execução. `test:smoke` usa a URL local também na verificação inicial do Cypress.
 
-### Bônus Cucumber
+A API segue o [Swagger do DemoQA](https://demoqa.com/swagger/). `cy.apiRequest()` resolve a URL e chama `cy.request()`:
 
-```sh
-npm run test:bonus
-npm run test:bonus:known-bug
-```
-
-Os comandos selecionam a mesma feature em português. `test:bonus` usa a expressão `not @known-bug`; `test:bonus:known-bug` usa `@known-bug`. No Cypress 16, essas opções passam por `--expose`, com `omitFiltered=true` para não apresentar o caso fora do perfil como pendente ou aprovado. `npm run test:bonus:all` não filtra tags: executa os dois e termina com falha enquanto o defeito persistir. A tag não transforma uma falha em sucesso nem ignora as asserções. `test:bonus:validos` preserva o perfil anterior por compatibilidade.
-
-Cada cenário navega novamente à Web Tables e gera seus próprios 12 registros. Ambos reutilizam exatamente os mesmos steps de navegação, cadastro e comparação. TC-BDD-001 termina após validar cadastro; TC-BDD-002 prepara o cadastro novamente e tenta as exclusões. Aliases estáticos pertencem à execução atual, com isolamento habilitado. Nenhum cenário depende do outro.
-
-`cypress.bdd.config.js` reutiliza o `setupNodeEvents` base, incluindo Puppeteer, URLs e servidor Smoke. `cypress-on-fix` compõe os handlers para que o encerramento do servidor e os relatórios Cucumber não sobrescrevam um ao outro. As specs `.cy.js` e seus scripts permanecem disponíveis.
-
-Para executar a suíte tradicional sob os plugins BDD, sem selecionar o bônus:
-
-```sh
-npm test -- --config-file cypress.bdd.config.js --spec "cypress/e2e/**/*.cy.js"
-```
-
-Versões fixadas: `@badeball/cypress-cucumber-preprocessor` 28.0.1, `@bahmutov/cypress-esbuild-preprocessor` 2.2.8, `esbuild` 0.28.2 e `cypress-on-fix` 1.1.0. O preprocessor declara suporte ao Cypress 16 e ao Node 24 usado neste projeto. A configuração segue os [exemplos oficiais](https://github.com/badeball/cypress-cucumber-preprocessor/blob/master/examples/esbuild-cjs/cypress.config.js) e a [orientação de composição de eventos](https://github.com/badeball/cypress-cucumber-preprocessor/blob/master/docs/event-handlers.md).
-
-Cada cenário mantém o mesmo documento durante seu próprio ciclo, seleciona 50 linhas e confirma página única/busca vazia. Gera e salva os 12 registros em `cypress/reports/bonus/<ID>/registros.json`, compara os seis campos de cada um e captura tabela/contagem após cadastro. TC-BDD-002 também captura o estado após cada Delete e exige que os registros restantes continuem presentes antes de preparar a próxima exclusão. Não recarrega a página nem altera React/DOM para contornar o defeito.
-
-Snapshots JSON ficam em pastas por ID dentro de `cypress/reports/bonus/`, relatório Gherkin em `cypress/reports/bonus-cucumber.json` e screenshots identificados por cenário em `cypress/screenshots/`. São evidências locais ignoradas pelo Git. Uma falha na primeira exclusão interrompe TC-BDD-002: as outras 11 exclusões e a ausência final não foram concluídas. O cadastro aprovado não significa aprovação da exclusão. O commit do bônus registra explicitamente essa cobertura parcial e preserva `503a576` no histórico.
-
-## Arquitetura e decisões
-
-```text
-cypress/
-  e2e/api/          bookstore.cy.js, smoke.cy.js
-  e2e/bdd/          web-tables.feature, web-tables.js (Step Definitions)
-  e2e/frontend/    practice-form, web-tables, progress-bar,
-                   sortable, browser-windows, smoke (.cy.js)
-  pages/           DemoQaPage, PracticeFormPage, WebTablesPage,
-                   ProgressBarPage, SortablePage, BrowserWindowsPage, SmokePage
-  fixtures/        demoqa-options.json, smoke.json, uploads/arquivo-teste.txt
-  support/         e2e.js, commands.js, utils/test-data.js
-scripts/
-  browser-actions.cjs     Ponte com o navegador para arraste e janela
-  smoke-server.js         Servidor local em porta livre
-  smoke-app/index.html    Aplicação mínima de diagnóstico
-docs/bonus-cucumber-bloqueado.md
-cypress.config.js
-cypress.bdd.config.js / .cypress-cucumber-preprocessorrc.json
-package.json / package-lock.json
-AGENTS.md
-```
-
-As [diretrizes permanentes](AGENTS.md) exigem cenários pequenos e independentes. Page Objects concentram seletores/interações; specs contêm cenários e asserções. `beforeEach` prepara a navegação quando há múltiplos casos. `testIsolation: true` e dados próprios evitam dependência entre testes. Não há herança de páginas ou camadas sem responsabilidade útil.
-
-Web Tables foi separado em cadastro, edição e exclusão. Cada caso prepara seus dados; a exclusão também cadastra e edita, preservando as validações do CRUD. As linhas são identificadas pelo e-mail único, sem posição ou ID numérico. `test-data.js` compartilha somente geradores utilizados.
-
-Book Store permanece integrado porque suas seis chamadas compõem o fluxo sequencial exigido. Separá-las em testes dependentes seria frágil; duplicar todo o preparo sem novas validações acrescentaria complexidade. ID, token e ISBNs são locais ao mesmo `it`, compartilhados por retornos encadeados de `.then()`. Uma falha interrompe o fluxo.
-
-## Book Store: contrato e dados
-
-Referência: [Swagger DemoQA](https://demoqa.com/swagger/). `cy.apiRequest()` resolve a URL e delega para `cy.request()`.
-
-| Etapa | Método e endpoint | HTTP |
+| Etapa | Endpoint | HTTP |
 | --- | --- | ---: |
 | Criar usuário | POST `/Account/v1/User` | 201 |
 | Gerar token | POST `/Account/v1/GenerateToken` | 200 |
@@ -152,34 +125,54 @@ Referência: [Swagger DemoQA](https://demoqa.com/swagger/). `cy.apiRequest()` re
 | Associar livros | POST `/BookStore/v1/Books` | 201 |
 | Consultar coleção | GET `/Account/v1/User/{userId}` | 200 |
 
-Além do HTTP e JSON, valida identidade, coleção inicial vazia, token não vazio com expiração futura, `status: Success`, autorização `true`, catálogo suficiente e exatamente os dois ISBNs associados. `Set` seleciona ISBNs distintos. A resposta real usa `userID` na criação e `userId` na consulta; essa diferença é explícita.
+O teste valida HTTP, JSON e conteúdo das respostas. Um erro interrompe o fluxo e informa a etapa. `failOnStatusCode: false` permite conferir a resposta na asserção; não aprova erros. Os retries de requisição estão desabilitados nesse fluxo.
 
-Login curto combina timestamp e parte de UUID; a senha usa outro UUID com prefixo que satisfaz a política. Não há conta pessoal ou ISBN fixo. Requisições sensíveis usam `log: false`, e o token não é impresso nas asserções nem persistido. HTTP inesperado ou erro no corpo reprova o teste com indicação da etapa. `failOnStatusCode: false` permite diagnosticar a resposta, sem aprová-la automaticamente. Retries de requisição estão desabilitados nesse fluxo.
+## Bônus com Cucumber
 
-## Interações reais e limites
+| Comando | Execução |
+| --- | --- |
+| `npm run test:bonus` | Apenas TC-BDD-001: um cenário de cadastro |
+| `npm run test:bonus:validos` | Mesmo perfil, mantido por compatibilidade |
+| `npm run test:bonus:known-bug` | Apenas TC-BDD-002: reprodução da exclusão bloqueada |
+| `npm run test:bonus:all` | Ambos, incluindo a falha conhecida |
 
-- **Practice Form:** Picture aceita o TXT solicitado; valida seleção e nome na confirmação, sem comprovar persistência em backend. O botão Close apresentou historicamente `findDOMNode is not a function`. O caminho validado é Escape, com asserção de fechamento. O botão não foi retestado nesta conclusão nem é tratado como corrigido.
-- **Progress Bar:** o componente consultado usa `setInterval(100)`. O relógio controla somente `setInterval`/`clearInterval` após a navegação. Cada `cy.tick(100)` executa o callback real e aguarda `aria-valuenow`. Após 100%, um callback adicional permite a limpeza do intervalo. Não se escreve no estado/DOM. Cobre transições, sem medir duração real ou fluidez. Mudança do timer exige reavaliação.
-- **Sortable:** o worker usa o mouse nativo do Chrome e normaliza coordenadas pela escala do iframe Cypress. Observa `dragstart`/`drop` com `isTrusted`, sem ordenar o DOM por JavaScript. Mudança e restauração da ordem são asserções da spec.
-- **Browser Windows:** acessa a página criada pelo clique, consulta identidades via CDP, lê `This is a sample page` e fecha a janela. Compara a quantidade de páginas antes/durante/depois e preserva a original. Não há stub de `window.open`. Erros de leitura e limpeza são propagados.
-- **Plugin:** a integração oficial `@cypress/puppeteer` 0.1.10 é experimental. Chrome padrão >=137 em modo headed tem restrição no plugin. O modo aprovado é Chrome headless. Para interatividade, consulte variantes compatíveis na documentação (Electron, Chromium ou Chrome for Testing); não foram validadas nesta entrega.
-- **Dependências:** `puppeteer-core` 25.16.0 está fixado e aplicado por override também ao plugin, retirando sua árvore antiga vulnerável. Não baixa outro navegador. Essa combinação foi validada neste ambiente; atualizações exigem regressão.
-- **Serviço externo:** rede, disponibilidade do DemoQA, autenticação e catálogo insuficiente podem reprovar execuções. Um login de 49 caracteres já retornou 500 no token após cadastro 201; o login curto funcionou. Limite exato e causa interna não foram confirmados. Cada execução mantém sua conta fictícia, pois exclusão de conta não faz parte do fluxo solicitado.
+Os dois cenários são independentes e reutilizam os steps de navegação, cadastro e comparação. Cada um cria seus próprios 12 registros, seleciona 50 linhas e verifica busca vazia e página única. A configuração BDD reaproveita os plugins e o servidor Smoke da configuração principal. `cypress-on-fix` preserva os handlers de encerramento e relatório.
 
-## Validação e entrega
+Os perfis passam as tags por `--expose`, com `omitFiltered=true`. O caso fora do perfil não é contado como aprovado ou pendente. A tag não transforma falha em sucesso. Para executar as specs tradicionais com a configuração BDD:
 
-A validação anterior inclui instalação limpa, auditoria e seis specs isoladas. Para a entrega, os comandos incluem o cadastro BDD isolado e sua repetição, a reprodução separada de TC-BDD-002, os nove obrigatórios, os cinco Smoke, a regressão padrão de 14 casos e `test:all` com 15 casos sem o cenário bloqueado. Os resultados são registrados após a execução, e a exclusão não é contada como aprovada. Web Tables e Progress Bar preservam seus casos independentes. Contagens, durações, falhas e evidências constam do relatório de entrega.
+```sh
+npm test -- --config-file cypress.bdd.config.js --spec "cypress/e2e/**/*.cy.js"
+```
 
-Screenshots são produzidos após verificações e em falhas. Ficam em `cypress/screenshots`, ignorados pelo Git e regenerados nas próximas execuções. O repositório exclui dependências, caches, relatórios, vídeos, configurações IntelliJ, `.env*` e `cypress.env.json`. `.env` não é carregado automaticamente. Não salvar credenciais ou tokens em código, fixtures ou argumentos.
+As massas e os snapshots ficam em `cypress/reports/bonus/<ID>/`, o relatório Gherkin em `cypress/reports/bonus-cucumber.json` e as imagens em `cypress/screenshots/`. Essas evidências são locais e ignoradas pelo Git.
 
-Destino da entrega: [edivann/desafio-qa-accenture](https://github.com/edivann/desafio-qa-accenture). A visibilidade definida é **privada**; é necessário acesso concedido pelo proprietário para visualizar ou clonar. Credenciais e evidências temporárias não integram o repositório.
+Execute o Runner e a regressão em momentos separados: ambos usam essas pastas de evidências, e a execução simultânea apresentou falha na limpeza de screenshots no Windows.
 
-## Referências
+## Limitações conhecidas
 
-- [Instalação do Cypress](https://docs.cypress.io/app/get-started/install-cypress)
-- [cy.request](https://docs.cypress.io/api/commands/request)
-- [selectFile](https://docs.cypress.io/api/commands/selectfile)
-- [clock](https://docs.cypress.io/api/commands/clock)
-- [Integração oficial Puppeteer](https://github.com/cypress-io/cypress/tree/develop/npm/puppeteer)
-- [Filtro oficial](https://github.com/cypress-io/cypress/tree/develop/npm/grep)
-- [Cucumber: instalação e Esbuild](https://github.com/badeball/cypress-cucumber-preprocessor/blob/master/docs/quick-start.md)
+- **Exclusão BDD:** após cadastrar 12 registros, a tabela tem 15 linhas. Na reprodução registrada, o primeiro Delete deixa apenas as três linhas originais, embora a asserção exija 14. Os outros 11 registros também desaparecem. O cenário salva evidências antes de falhar; as outras 11 exclusões e a verificação final não são concluídas. Não há 12 exclusões individuais aprovadas. O [diagnóstico completo](docs/bonus-cucumber-bloqueado.md) inclui reprodução manual e hipótese técnica, sem apresentar a causa interna como comprovada. Não há alteração do estado React nem exclusão simulada.
+- **Practice Form:** o TXT é conferido na seleção e no modal, sem validar persistência em backend. O botão Close apresentou `findDOMNode is not a function`; o teste usa Escape e confirma o fechamento. O botão não foi tratado como corrigido nem revalidado nesta revisão.
+- **Progress Bar:** `cy.clock` controla apenas `setInterval`/`clearInterval`. Cada `cy.tick(100)` executa o callback real e espera o valor renderizado; um callback adicional permite limpar o intervalo em 100%. O teste não mede fluidez ou duração real. Se o timer do site mudar, esse controle precisa ser revisto.
+- **Navegador:** o plugin Puppeteer é experimental. Chrome convencional >=137 tem uma restrição de extensão no modo visual; Chrome for Testing é usado para essa execução. Os comandos headless continuam usando Chrome. Veja a [compatibilidade oficial do plugin](https://github.com/cypress-io/cypress/tree/develop/npm/puppeteer#compatibility).
+- **DemoQA e rede:** indisponibilidade, falhas de autenticação e catálogo insuficiente reprovam os testes. Um login longo já retornou 500 na geração do token após cadastro 201; o teste usa um login curto e único. O limite exato do site não foi confirmado. As contas fictícias permanecem no DemoQA, pois removê-las não faz parte do fluxo solicitado.
+
+## Observações necessárias para reprodução
+
+Browser Windows usa a janela criada pelo clique, lê a mensagem e a fecha via Puppeteer. Sortable usa o mouse nativo e ajusta as coordenadas à escala do iframe do Cypress, verificando `dragstart`/`drop` com `isTrusted`. Não há stub de janela, ordenação artificial do DOM, exceções ignoradas, `only`, `skip`, retries de teste, esperas fixas com `cy.wait` ou cliques forçados.
+
+Os dados são fictícios e os e-mails usam UUID. Credenciais da API são geradas por execução; chamadas sensíveis usam `log: false`, e o token não é impresso nem salvo. Não inclua credenciais, tokens ou dados pessoais em código, fixtures ou argumentos. `.env` não é carregado automaticamente. Dependências, navegadores, caches, evidências, configurações do IntelliJ, `.env*` e `cypress.env.json` ficam fora do Git.
+
+As URLs podem ser informadas com `--config baseUrl=https://demoqa.com` e `--expose apiUrl=https://demoqa.com`. Os contratos e seletores continuam específicos do DemoQA.
+
+Se o terminal usar um npm global antigo, use o que acompanha o Node:
+
+```powershell
+$taskNpm = Join-Path (Split-Path (Get-Command node).Source) 'node_modules/npm/bin/npm-cli.js'
+node $taskNpm --version
+node $taskNpm ci
+node $taskNpm run test:challenge
+```
+
+Em redes corporativas, se aparecer `UNABLE_TO_VERIFY_LEAF_SIGNATURE` e a autoridade certificadora já for confiável no sistema, defina `$env:NODE_USE_SYSTEM_CA = '1'` antes dos comandos. Não desabilite a validação TLS.
+
+Referências de configuração: [navegadores Cypress](https://docs.cypress.io/app/references/launching-browsers), [instalador Chrome for Testing](https://pptr.dev/browsers-api), [Cucumber com Esbuild](https://github.com/badeball/cypress-cucumber-preprocessor/blob/master/examples/esbuild-cjs/cypress.config.js) e [composição de eventos](https://github.com/badeball/cypress-cucumber-preprocessor/blob/master/docs/event-handlers.md).

@@ -20,7 +20,6 @@ describe('DemoQA | Fluxo completo da API Book Store', () => {
       password: `Qa!9_${crypto.randomUUID()}`,
     };
 
-    // Estado desta execução, compartilhado somente entre os callbacks do fluxo.
     let userId;
     let token;
     let selectedIsbns;

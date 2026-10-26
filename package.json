@@ -23,7 +23,7 @@
     "test:bonus:known-bug": "cypress run --browser chrome --config-file cypress.bdd.config.js --spec \"cypress/e2e/bdd/**/*.feature\" --expose \"tags=@known-bug,omitFiltered=true\"",
     "test:bonus:all": "cypress run --browser chrome --config-file cypress.bdd.config.js --spec \"cypress/e2e/bdd/**/*.feature\"",
     "test:all": "cypress run --browser chrome --config-file cypress.bdd.config.js --expose \"tags=not @known-bug,omitFiltered=true\"",
-    "cy:open": "cypress open --e2e",
+    "cy:open": "cypress open --e2e --config-file cypress.bdd.config.js --expose \"tags=not @known-bug,omitFiltered=true\"",
     "cy:verify": "cypress verify",
     "cy:info": "cypress info"
   },

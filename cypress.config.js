@@ -3,6 +3,7 @@ const { startSmokeServer } = require('./scripts/smoke-server');
 const { setup } = require('@cypress/puppeteer');
 const puppeteer = require('puppeteer-core');
 const browserActions = require('./scripts/browser-actions.cjs');
+const chromeForTesting = require('./scripts/chrome-for-testing.cjs');
 
 module.exports = defineConfig({
   viewportWidth: 1280,
@@ -17,6 +18,7 @@ module.exports = defineConfig({
     fixturesFolder: 'cypress/fixtures',
     testIsolation: true,
     async setupNodeEvents(on, config) {
+      if (config.isInteractive) config.browsers = [chromeForTesting()];
       setup({ on, puppeteer, onMessage: browserActions });
       const { server, origin } = await startSmokeServer();
 

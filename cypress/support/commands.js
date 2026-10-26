@@ -1,4 +1,3 @@
-// Prefira atributos de teste estáveis em vez de classes ou estrutura do DOM.
 Cypress.Commands.add('getByTestId', (testId, options = {}) => (
   cy.get(`[data-testid="${testId}"]`, options)
 ));
